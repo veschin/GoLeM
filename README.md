@@ -51,6 +51,13 @@ glm _install
 
 `_install` creates `~/.config/GoLeM/`, asks for Z.AI API key, symlinks the binary, and injects delegation instructions into `~/.claude/CLAUDE.md`.
 
+Shell completions are installed automatically:
+- **Bash:** `~/.local/share/bash-completion/completions/glm`
+- **Fish:** `~/.config/fish/completions/glm.fish`
+- **Zsh:** `~/.config/zsh/completions/_glm` (add `fpath=(~/.config/zsh/completions $fpath)` to `.zshrc`)
+
+Restart your shell or open a new terminal to enable completions.
+
 ## Update
 
 ```bash
