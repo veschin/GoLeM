@@ -35,6 +35,38 @@ type InstallOptions struct {
 	Out io.Writer
 }
 
+// prompter wraps a reader for line-by-line prompting without losing buffered data.
+type prompter struct {
+	scanner *bufio.Scanner
+	out     io.Writer
+}
+
+func newPrompter(in io.Reader, out io.Writer) *prompter {
+	return &prompter{
+		scanner: bufio.NewScanner(in),
+		out:     out,
+	}
+}
+
+func (p *prompter) prompt(message string) (string, error) {
+	fmt.Fprint(p.out, message)
+	if p.scanner.Scan() {
+		return strings.TrimSpace(p.scanner.Text()), nil
+	}
+	if err := p.scanner.Err(); err != nil {
+		return "", err
+	}
+	return "", nil
+}
+
+func (p *prompter) promptYN(message string) (bool, error) {
+	resp, err := p.prompt(message)
+	if err != nil {
+		return false, err
+	}
+	return strings.ToLower(resp) == "y", nil
+}
+
 // glmSubagentTemplate is the GLM section content to inject into CLAUDE.md.
 // The actual template content is loaded from CloneDir/CLAUDE.md if available.
 const glmSubagentTemplate = `<!-- GLM-SUBAGENT-START -->
@@ -48,28 +80,6 @@ const glmSectionStart = "<!-- GLM-SUBAGENT-START -->"
 
 // glmSectionEnd is the end marker for the GLM section in CLAUDE.md.
 const glmSectionEnd = "<!-- GLM-SUBAGENT-END -->"
-
-// prompt prompts the user with a message and reads the response.
-func prompt(in io.Reader, out io.Writer, message string) (string, error) {
-	fmt.Fprint(out, message)
-	scanner := bufio.NewScanner(in)
-	if scanner.Scan() {
-		return strings.TrimSpace(scanner.Text()), nil
-	}
-	if err := scanner.Err(); err != nil {
-		return "", err
-	}
-	return "", nil
-}
-
-// promptYN prompts for a yes/no response; returns true for "y".
-func promptYN(in io.Reader, out io.Writer, message string) (bool, error) {
-	resp, err := prompt(in, out, message)
-	if err != nil {
-		return false, err
-	}
-	return strings.ToLower(resp) == "y", nil
-}
 
 // InstallCmd runs the interactive glm _install flow:
 //  1. Migrates legacy API key from ~/.config/zai/env if present.
@@ -88,6 +98,9 @@ func InstallCmd(opts InstallOptions) error {
 	if out == nil {
 		out = os.Stdout
 	}
+
+	// Create a shared prompter to avoid losing buffered input.
+	p := newPrompter(in, out)
 
 	// Ensure config directory exists.
 	if err := os.MkdirAll(opts.ConfigDir, 0o755); err != nil {
@@ -110,7 +123,7 @@ func InstallCmd(opts InstallOptions) error {
 
 	writeKey := true
 	if apiKeyExists {
-		overwrite, err := promptYN(in, out, "Z.AI API key already exists. Overwrite? [y/N]: ")
+		overwrite, err := p.promptYN("Z.AI API key already exists. Overwrite? [y/N]: ")
 		if err != nil {
 			return fmt.Errorf("read overwrite prompt: %w", err)
 		}
@@ -118,7 +131,7 @@ func InstallCmd(opts InstallOptions) error {
 	}
 
 	if writeKey {
-		apiKey, err := prompt(in, out, "Enter Z.AI API key: ")
+		apiKey, err := p.prompt("Enter Z.AI API key: ")
 		if err != nil {
 			return fmt.Errorf("read API key: %w", err)
 		}
@@ -134,7 +147,7 @@ func InstallCmd(opts InstallOptions) error {
 	// Step 2: Permission mode (only if glm.toml does not exist).
 	tomlPath := filepath.Join(opts.ConfigDir, "glm.toml")
 	if _, err := os.Stat(tomlPath); os.IsNotExist(err) {
-		permMode, err := prompt(in, out, "Permission mode [bypassPermissions/acceptEdits] (default: bypassPermissions): ")
+		permMode, err := p.prompt("Permission mode [bypassPermissions/acceptEdits] (default: bypassPermissions): ")
 		if err != nil {
 			return fmt.Errorf("read permission mode: %w", err)
 		}
@@ -180,7 +193,7 @@ func InstallCmd(opts InstallOptions) error {
 	// Step 4: Symlink — only for source/clone-based installs.
 	// For go-install, the binary is already in $GOPATH/bin which is in PATH.
 	if installMode == "source" {
-		if err := createSymlink(opts.CloneDir, opts.BinDir, in, out); err != nil {
+		if err := createSymlink(opts.CloneDir, opts.BinDir, p); err != nil {
 			return err
 		}
 	} else {
@@ -232,7 +245,7 @@ func migrateLegacyAPIKey(destPath string, out io.Writer) bool {
 
 // createSymlink creates a symlink at BinDir/glm pointing to the binary
 // in CloneDir. Handles existing files/symlinks with prompts.
-func createSymlink(cloneDir, binDir string, in io.Reader, out io.Writer) error {
+func createSymlink(cloneDir, binDir string, p *prompter) error {
 	if err := os.MkdirAll(binDir, 0o755); err != nil {
 		return fmt.Errorf("create bin dir: %w", err)
 	}
@@ -243,7 +256,7 @@ func createSymlink(cloneDir, binDir string, in io.Reader, out io.Writer) error {
 	fi, statErr := os.Lstat(symlinkPath)
 	if statErr == nil {
 		if fi.Mode()&os.ModeSymlink == 0 {
-			replace, err := promptYN(in, out, fmt.Sprintf("A regular file exists at %s. Replace with symlink? [y/N]: ", symlinkPath))
+			replace, err := p.promptYN(fmt.Sprintf("A regular file exists at %s. Replace with symlink? [y/N]: ", symlinkPath))
 			if err != nil {
 				return fmt.Errorf("read replace prompt: %w", err)
 			}
@@ -275,7 +288,7 @@ func createSymlink(cloneDir, binDir string, in io.Reader, out io.Writer) error {
 		}
 	}
 	if !inPath {
-		fmt.Fprintf(out, "Warning: %s is not in PATH. Add it to your shell profile.\n", binDir)
+		fmt.Fprintf(p.out, "Warning: %s is not in PATH. Add it to your shell profile.\n", binDir)
 	}
 	return nil
 }
@@ -351,6 +364,9 @@ func UninstallCmd(opts UninstallOptions) error {
 		out = os.Stdout
 	}
 
+	// Create a shared prompter to avoid losing buffered input.
+	p := newPrompter(in, out)
+
 	// Step 1: Remove the symlink at BinDir/glm (only for source installs).
 	installMode := readInstallMode(opts.ConfigDir)
 	symlinkPath := filepath.Join(opts.BinDir, "glm")
@@ -369,7 +385,7 @@ func UninstallCmd(opts UninstallOptions) error {
 
 	// Step 3: Prompt before removing API key.
 	apiKeyPath := filepath.Join(opts.ConfigDir, "zai_api_key")
-	removeKey, err := promptYN(in, out, fmt.Sprintf("Remove credentials (%s)? [y/N]: ", apiKeyPath))
+	removeKey, err := p.promptYN(fmt.Sprintf("Remove credentials (%s)? [y/N]: ", apiKeyPath))
 	if err != nil {
 		return fmt.Errorf("read credentials prompt: %w", err)
 	}
@@ -380,7 +396,7 @@ func UninstallCmd(opts UninstallOptions) error {
 	}
 
 	// Step 4: Prompt before removing subagents directory.
-	removeSubagents, err := promptYN(in, out, fmt.Sprintf("Remove job results (%s)? [y/N]: ", opts.SubagentsDir))
+	removeSubagents, err := p.promptYN(fmt.Sprintf("Remove job results (%s)? [y/N]: ", opts.SubagentsDir))
 	if err != nil {
 		return fmt.Errorf("read subagents prompt: %w", err)
 	}
