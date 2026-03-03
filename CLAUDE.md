@@ -68,6 +68,30 @@ Hooks enforce gates automatically — blocked writes show the reason.
   Scopes: PRD, SEED, BDD, TEST, IMPL, TASK, STATUS
   Types: feat, add, fix, refactor, remove, update
 
+## Troubleshooting
+
+When ptsd status/validate shows unexpected results, debug with these steps:
+
+| Symptom | Cause | Fix |
+|---------|-------|-----|
+| TESTS:0 but test files exist | Tests not mapped to features | `ptsd test map .ptsd/bdd/<id>.feature <test-file>` for each feature |
+| BDD:0 but .feature files exist | State hashes empty, SyncState not run | `ptsd status --agent` triggers sync; if still 0, check `.ptsd/bdd/<id>.feature` has `@feature:<id>` tag on line 1 |
+| Feature stuck at wrong stage | review-status.yaml stale or stage not advanced | Run `ptsd review <id> <stage> <score>` to advance; check `ptsd context --agent` for blockers |
+| "no test files mapped" on `ptsd test run` | Test mapping missing in state.yaml | `ptsd test map .ptsd/bdd/<id>.feature <test-file>` |
+| Gate blocks file write | File not in allowed list for current stage | Check `ptsd gate-check --file <path> --agent`; advance feature to correct stage first |
+| Validate shows "mock detected" | Test file contains mock/stub patterns | Replace mocks with real file-based tests in temp directories |
+| Regression warning on status | Artifact file changed after stage was reviewed | Re-review the stage: `ptsd review <id> <stage> <score>` |
+
+### Debug flow
+1. `ptsd context --agent` — shows next action, blockers, stage per feature
+2. `ptsd feature show <id> --agent` — shows artifact counts and test stats
+3. `ptsd validate --agent` — shows all pipeline violations
+4. Check `.ptsd/state.yaml` — hashes, test mappings, stages
+5. Check `.ptsd/review-status.yaml` — review verdicts per feature
+
+### Test mapping
+Each feature needs: BDD file (`.ptsd/bdd/<id>.feature`) with `@feature:<id>` tag → mapped to test file via `ptsd test map`. Without mapping, ptsd cannot track test results per feature.
+
 ## Forbidden
 
 - Mocking internal code
