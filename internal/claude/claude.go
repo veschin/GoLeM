@@ -9,6 +9,7 @@ import (
 	"os/exec"
 	"path/filepath"
 	"strings"
+	"syscall"
 	"time"
 )
 
@@ -147,6 +148,7 @@ func Execute(cfg Config) (int, error) {
 	cmd := exec.CommandContext(ctx, "claude", args...)
 	cmd.Dir = cfg.WorkDir
 	cmd.Env = BuildEnv(cfg)
+	cmd.SysProcAttr = &syscall.SysProcAttr{Setpgid: true}
 
 	var stdoutBuf, stderrBuf strings.Builder
 	cmd.Stdout = &stdoutBuf
