@@ -139,8 +139,14 @@ func SessionCmd(cfg *config.Config, args []string, debugLog io.Writer) (*Session
 
 	// Build environment (filtered copy of os.Environ with blocked vars removed).
 	blocked := map[string]bool{
-		"CLAUDECODE":              true,
-		"CLAUDE_CODE_ENTRYPOINT": true,
+		"CLAUDECODE":                    true,
+		"CLAUDE_CODE_ENTRYPOINT":        true,
+		"ANTHROPIC_AUTH_TOKEN":          true,
+		"ANTHROPIC_BASE_URL":            true,
+		"ANTHROPIC_DEFAULT_OPUS_MODEL":  true,
+		"ANTHROPIC_DEFAULT_SONNET_MODEL": true,
+		"ANTHROPIC_DEFAULT_HAIKU_MODEL": true,
+		"API_TIMEOUT_MS":                true,
 	}
 	var env []string
 	for _, kv := range os.Environ() {

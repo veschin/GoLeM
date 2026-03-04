@@ -39,8 +39,14 @@ type Config struct {
 func BuildEnv(cfg Config) []string {
 	// Start from a filtered copy of os.Environ.
 	blocked := map[string]bool{
-		"CLAUDECODE":              true,
-		"CLAUDE_CODE_ENTRYPOINT": true,
+		"CLAUDECODE":                    true,
+		"CLAUDE_CODE_ENTRYPOINT":        true,
+		"ANTHROPIC_AUTH_TOKEN":          true,
+		"ANTHROPIC_BASE_URL":            true,
+		"ANTHROPIC_DEFAULT_OPUS_MODEL":  true,
+		"ANTHROPIC_DEFAULT_SONNET_MODEL": true,
+		"ANTHROPIC_DEFAULT_HAIKU_MODEL": true,
+		"API_TIMEOUT_MS":                true,
 	}
 
 	var base []string
