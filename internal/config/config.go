@@ -17,7 +17,7 @@ const (
 	ZaiAPITimeoutMs       = "3000000"
 	DefaultTimeout        = 3000
 	DefaultMaxParallel    = 3
-	DefaultModel          = "glm-4.7"
+	DefaultModel          = "glm-5"
 	DefaultPermissionMode = "bypassPermissions"
 )
 

@@ -79,7 +79,7 @@ Examples:
 ```bash
 glm run -d ~/project "find bugs in auth.go"
 glm run -m glm-4 "refactor auth"               # all three slots → glm-4
-glm run --opus glm-4.7 --haiku glm-4 "task"    # per-slot models
+glm run --opus glm-5 --haiku glm-4 "task"    # per-slot models
 glm session --sonnet glm-4                      # interactive session with custom sonnet
 glm run --unsafe "deploy hotfix"                # bypass permission checks
 glm start -t 600 "long task"                    # async with 10-minute timeout
@@ -106,7 +106,7 @@ Apply to `session`, `run`, `start`, and `chain`.
 | `--mode MODE` | Permission mode: `bypassPermissions`, `acceptEdits`, `default`, `plan` |
 | `--json` | JSON output for list, status, result, log |
 
-Claude Code uses three model slots internally: heavy tasks go to opus, normal tasks to sonnet, fast tasks to haiku. All three default to `glm-4.7`. `-m` changes all at once; `--opus`/`--sonnet`/`--haiku` change them individually.
+Claude Code uses three model slots internally: heavy tasks go to opus, normal tasks to sonnet, fast tasks to haiku. All three default to `glm-5`. `-m` changes all at once; `--opus`/`--sonnet`/`--haiku` change them individually.
 
 `session` passes unknown flags directly to `claude` — for example `--resume`, `--verbose`.
 
@@ -124,7 +124,7 @@ glm config set model glm-4
 
 | Key | Env | Default | Description |
 |---|---|---|---|
-| `model` | `GLM_MODEL` | `glm-4.7` | Default model for all three slots |
+| `model` | `GLM_MODEL` | `glm-5` | Default model for all three slots |
 | `opus_model` | `GLM_OPUS_MODEL` | (model) | Model for heavy tasks |
 | `sonnet_model` | `GLM_SONNET_MODEL` | (model) | Model for normal tasks |
 | `haiku_model` | `GLM_HAIKU_MODEL` | (model) | Model for fast tasks |

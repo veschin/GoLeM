@@ -89,7 +89,7 @@ func TestParseAllFlagsForRunCommand(t *testing.T) {
 func TestParsePerSlotModelOverrideFlags(t *testing.T) {
 	args := []string{
 		"run",
-		"--opus", "glm-4.7",
+		"--opus", "glm-5",
 		"--sonnet", "glm-4.5",
 		"--haiku", "glm-4.0",
 		"Write tests",
@@ -99,8 +99,8 @@ func TestParsePerSlotModelOverrideFlags(t *testing.T) {
 		t.Fatalf("unexpected error: %v", err)
 	}
 
-	if f.OpusModel != "glm-4.7" {
-		t.Errorf("OpusModel: got %q, want %q", f.OpusModel, "glm-4.7")
+	if f.OpusModel != "glm-5" {
+		t.Errorf("OpusModel: got %q, want %q", f.OpusModel, "glm-5")
 	}
 	if f.SonnetModel != "glm-4.5" {
 		t.Errorf("SonnetModel: got %q, want %q", f.SonnetModel, "glm-4.5")

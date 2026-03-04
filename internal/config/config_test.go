@@ -15,7 +15,7 @@ import (
 // All seed content is copied from .ptsd/seeds/config-management/ so tests
 // are self-contained and do not depend on the ptsd directory layout.
 
-const seedHappyPathTOML = `model = "glm-4.7"
+const seedHappyPathTOML = `model = "glm-5"
 permission_mode = "acceptEdits"
 max_parallel = 5
 `
@@ -32,35 +32,35 @@ const seedEmptyTOML = ``
 const seedEmptyAPIKey = ``
 
 const seedPerSlotOverrideTOML = `model = "glm-4.5"
-opus_model = "glm-4.7"
+opus_model = "glm-5"
 sonnet_model = "glm-4.5"
 haiku_model = "glm-4.0"
 permission_mode = "bypassPermissions"
 max_parallel = 2
 `
 
-const seedInvalidMaxParallelTOML = `model = "glm-4.7"
+const seedInvalidMaxParallelTOML = `model = "glm-5"
 permission_mode = "acceptEdits"
 max_parallel = -5
 `
 
-const seedInvalidPermissionModeTOML = `model = "glm-4.7"
+const seedInvalidPermissionModeTOML = `model = "glm-5"
 permission_mode = "yolo"
 max_parallel = 3
 `
 
-const seedInvalidSyntaxTOML = `model = "glm-4.7"
+const seedInvalidSyntaxTOML = `model = "glm-5"
 this is not valid toml [[[
 permission_mode = broken
 `
 
-const seedUnknownKeysTOML = `model = "glm-4.7"
+const seedUnknownKeysTOML = `model = "glm-5"
 future_feature = true
 experimental_timeout = 9000
 nested_section = "ignored"
 `
 
-const seedZeroMaxParallelTOML = `model = "glm-4.7"
+const seedZeroMaxParallelTOML = `model = "glm-5"
 permission_mode = "acceptEdits"
 max_parallel = 0
 `
@@ -141,10 +141,10 @@ func TestLoadHappyPath(t *testing.T) {
 
 	// Match expected_happy_path.json
 	expectedJSON := `{
-  "model": "glm-4.7",
-  "opus_model": "glm-4.7",
-  "sonnet_model": "glm-4.7",
-  "haiku_model": "glm-4.7",
+  "model": "glm-5",
+  "opus_model": "glm-5",
+  "sonnet_model": "glm-5",
+  "haiku_model": "glm-5",
   "permission_mode": "acceptEdits",
   "max_parallel": 5,
   "zai_api_key": "sk-zai-a1b2c3d4e5f6g7h8i9j0k1l2m3n4o5p6q7r8s9t0",
@@ -190,8 +190,8 @@ func TestUseDefaultsWhenNoTOML(t *testing.T) {
 		t.Fatalf("Load returned unexpected error: %v", err)
 	}
 
-	if cfg.Model != "glm-4.7" {
-		t.Errorf("Model: got %q, want %q", cfg.Model, "glm-4.7")
+	if cfg.Model != "glm-5" {
+		t.Errorf("Model: got %q, want %q", cfg.Model, "glm-5")
 	}
 	if cfg.PermissionMode != "bypassPermissions" {
 		t.Errorf("PermissionMode: got %q, want %q", cfg.PermissionMode, "bypassPermissions")
@@ -219,8 +219,8 @@ func TestEmptyTOMLUsesDefaults(t *testing.T) {
 		t.Fatalf("Load returned unexpected error: %v", err)
 	}
 
-	if cfg.Model != "glm-4.7" {
-		t.Errorf("Model: got %q, want %q", cfg.Model, "glm-4.7")
+	if cfg.Model != "glm-5" {
+		t.Errorf("Model: got %q, want %q", cfg.Model, "glm-5")
 	}
 	if cfg.PermissionMode != "bypassPermissions" {
 		t.Errorf("PermissionMode: got %q, want %q", cfg.PermissionMode, "bypassPermissions")
@@ -430,8 +430,8 @@ func TestPerSlotTOMLOverride(t *testing.T) {
 	if cfg.Model != "glm-4.5" {
 		t.Errorf("Model: got %q, want %q", cfg.Model, "glm-4.5")
 	}
-	if cfg.OpusModel != "glm-4.7" {
-		t.Errorf("OpusModel: got %q, want %q", cfg.OpusModel, "glm-4.7")
+	if cfg.OpusModel != "glm-5" {
+		t.Errorf("OpusModel: got %q, want %q", cfg.OpusModel, "glm-5")
 	}
 	if cfg.SonnetModel != "glm-4.5" {
 		t.Errorf("SonnetModel: got %q, want %q", cfg.SonnetModel, "glm-4.5")
@@ -670,8 +670,8 @@ func TestConfigStructFields(t *testing.T) {
 	if cfg.Model != "glm-4.5" {
 		t.Errorf("Model: got %q, want %q", cfg.Model, "glm-4.5")
 	}
-	if cfg.OpusModel != "glm-4.7" {
-		t.Errorf("OpusModel: got %q, want %q", cfg.OpusModel, "glm-4.7")
+	if cfg.OpusModel != "glm-5" {
+		t.Errorf("OpusModel: got %q, want %q", cfg.OpusModel, "glm-5")
 	}
 	if cfg.SonnetModel != "glm-4.5" {
 		t.Errorf("SonnetModel: got %q, want %q", cfg.SonnetModel, "glm-4.5")
@@ -725,8 +725,8 @@ func TestHardcodedConstants(t *testing.T) {
 	if DefaultMaxParallel != 3 {
 		t.Errorf("DefaultMaxParallel constant: got %d, want 3", DefaultMaxParallel)
 	}
-	if DefaultModel != "glm-4.7" {
-		t.Errorf("DefaultModel constant: got %q, want %q", DefaultModel, "glm-4.7")
+	if DefaultModel != "glm-5" {
+		t.Errorf("DefaultModel constant: got %q, want %q", DefaultModel, "glm-5")
 	}
 	if DefaultPermissionMode != "bypassPermissions" {
 		t.Errorf("DefaultPermissionMode constant: got %q, want %q", DefaultPermissionMode, "bypassPermissions")
@@ -744,8 +744,8 @@ func TestUnknownTOMLKeysIgnored(t *testing.T) {
 	if err != nil {
 		t.Fatalf("Load returned unexpected error for TOML with unknown keys: %v", err)
 	}
-	if cfg.Model != "glm-4.7" {
-		t.Errorf("Model: got %q, want %q", cfg.Model, "glm-4.7")
+	if cfg.Model != "glm-5" {
+		t.Errorf("Model: got %q, want %q", cfg.Model, "glm-5")
 	}
 }
 

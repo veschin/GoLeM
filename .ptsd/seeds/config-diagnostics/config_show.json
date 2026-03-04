@@ -1,10 +1,10 @@
 {
   "description": "glm config show output with mixed sources",
   "expected_fields": [
-    {"key": "model", "value": "glm-4.7", "source": "config"},
-    {"key": "opus_model", "value": "glm-4.7", "source": "default"},
-    {"key": "sonnet_model", "value": "glm-4.7", "source": "default"},
-    {"key": "haiku_model", "value": "glm-4.7", "source": "default"},
+    {"key": "model", "value": "glm-5", "source": "config"},
+    {"key": "opus_model", "value": "glm-5", "source": "default"},
+    {"key": "sonnet_model", "value": "glm-5", "source": "default"},
+    {"key": "haiku_model", "value": "glm-5", "source": "default"},
     {"key": "permission_mode", "value": "acceptEdits", "source": "env"},
     {"key": "max_parallel", "value": 3, "source": "default"},
     {"key": "subagent_dir", "value": "~/.claude/subagents", "source": "default"},

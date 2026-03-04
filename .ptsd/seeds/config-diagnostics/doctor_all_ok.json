@@ -18,7 +18,7 @@
     {
       "name": "models",
       "status": "ok",
-      "detail": "opus=glm-4.7, sonnet=glm-4.7, haiku=glm-4.7"
+      "detail": "opus=glm-5, sonnet=glm-5, haiku=glm-5"
     },
     {
       "name": "slots",

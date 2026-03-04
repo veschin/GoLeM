@@ -319,7 +319,7 @@ func TestConfigSetCmdCreatesDirectory(t *testing.T) {
 	opts := cmd.ConfigSetOptions{
 		ConfigDir: dir,
 		Key:       "model",
-		Value:     "glm-4.7",
+		Value:     "glm-5",
 	}
 	if err := cmd.ConfigSetCmd(opts); err != nil {
 		t.Fatalf("ConfigSetCmd unexpected error: %v", err)

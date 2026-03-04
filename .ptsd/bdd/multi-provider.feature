@@ -16,9 +16,9 @@ Feature: Multi-Provider Support
       timeout_ms = "3000000"
 
       [providers.zai.models]
-      opus = "glm-4.7"
-      sonnet = "glm-4.7"
-      haiku = "glm-4.7"
+      opus = "glm-5"
+      sonnet = "glm-5"
+      haiku = "glm-5"
 
       [providers.custom]
       base_url = "https://my-proxy.example.com"
@@ -46,9 +46,9 @@ Feature: Multi-Provider Support
     Then the environment should have ANTHROPIC_AUTH_TOKEN "sk-zai-a1b2c3d4e5f6g7h8i9j0"
     And the environment should have ANTHROPIC_BASE_URL "https://api.z.ai/api/anthropic"
     And the environment should have API_TIMEOUT_MS "3000000"
-    And the environment should have ANTHROPIC_DEFAULT_OPUS_MODEL "glm-4.7"
-    And the environment should have ANTHROPIC_DEFAULT_SONNET_MODEL "glm-4.7"
-    And the environment should have ANTHROPIC_DEFAULT_HAIKU_MODEL "glm-4.7"
+    And the environment should have ANTHROPIC_DEFAULT_OPUS_MODEL "glm-5"
+    And the environment should have ANTHROPIC_DEFAULT_SONNET_MODEL "glm-5"
+    And the environment should have ANTHROPIC_DEFAULT_HAIKU_MODEL "glm-5"
 
   Scenario: Select custom provider explicitly
     Given the API key file "~/.config/GoLeM/custom_api_key" contains "sk-custom-z9y8x7w6v5u4t3s2r1q0"
@@ -66,7 +66,7 @@ Feature: Multi-Provider Support
     Given the API key file "~/.config/GoLeM/zai_api_key" contains "sk-zai-a1b2c3d4e5f6g7h8i9j0"
     When I run "glm run 'Hello'"
     Then the environment should have ANTHROPIC_BASE_URL "https://api.z.ai/api/anthropic"
-    And the environment should have ANTHROPIC_DEFAULT_OPUS_MODEL "glm-4.7"
+    And the environment should have ANTHROPIC_DEFAULT_OPUS_MODEL "glm-5"
 
   Scenario: Default provider can be changed via config
     Given the config file "~/.config/GoLeM/glm.toml" also contains:
@@ -82,9 +82,9 @@ Feature: Multi-Provider Support
   Scenario: Provider zai uses its own model mappings
     Given the API key file "~/.config/GoLeM/zai_api_key" exists
     When I run "glm run --provider zai 'Hello'"
-    Then the environment should have ANTHROPIC_DEFAULT_OPUS_MODEL "glm-4.7"
-    And the environment should have ANTHROPIC_DEFAULT_SONNET_MODEL "glm-4.7"
-    And the environment should have ANTHROPIC_DEFAULT_HAIKU_MODEL "glm-4.7"
+    Then the environment should have ANTHROPIC_DEFAULT_OPUS_MODEL "glm-5"
+    And the environment should have ANTHROPIC_DEFAULT_SONNET_MODEL "glm-5"
+    And the environment should have ANTHROPIC_DEFAULT_HAIKU_MODEL "glm-5"
 
   Scenario: Provider custom uses its own model mappings
     Given the API key file "~/.config/GoLeM/custom_api_key" exists
@@ -135,7 +135,7 @@ Feature: Multi-Provider Support
   Scenario: No providers in config uses hardcoded Z.AI defaults
     Given the config file "~/.config/GoLeM/glm.toml" contains:
       """
-      model = "glm-4.7"
+      model = "glm-5"
       """
     And a valid API key file exists at "~/.config/GoLeM/zai_api_key"
     When I run "glm run 'Hello'"

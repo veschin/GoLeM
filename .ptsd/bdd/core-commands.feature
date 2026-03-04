@@ -26,12 +26,12 @@ Feature: Core Commands (run, start, status, result)
   Scenario: Parse per-slot model override flags
     Given the arguments from seed "flags_per_slot.json":
       | flag     | value   |
-      | --opus   | glm-4.7 |
+      | --opus   | glm-5 |
       | --sonnet | glm-4.5 |
       | --haiku  | glm-4.0 |
       | prompt   | Write tests |
     When flags are parsed
-    Then the opus model is "glm-4.7"
+    Then the opus model is "glm-5"
     And the sonnet model is "glm-4.5"
     And the haiku model is "glm-4.0"
     And the prompt is "Write tests"

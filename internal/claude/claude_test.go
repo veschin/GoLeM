@@ -500,9 +500,9 @@ func TestMetadataFilesWrittenBeforeExecution(t *testing.T) {
 		Prompt:         "Analyze the code",
 		WorkDir:        workDir,
 		PermissionMode: "bypassPermissions",
-		OpusModel:      "glm-4.7",
-		SonnetModel:    "glm-4.7",
-		HaikuModel:     "glm-4.7",
+		OpusModel:      "glm-5",
+		SonnetModel:    "glm-5",
+		HaikuModel:     "glm-5",
 		JobDir:         jobDir,
 	}
 
@@ -515,7 +515,7 @@ func TestMetadataFilesWrittenBeforeExecution(t *testing.T) {
 		{"prompt.txt", "Analyze the code"},
 		{"workdir.txt", workDir},
 		{"permission_mode.txt", "bypassPermissions"},
-		{"model.txt", "opus=glm-4.7 sonnet=glm-4.7 haiku=glm-4.7"},
+		{"model.txt", "opus=glm-5 sonnet=glm-5 haiku=glm-5"},
 	} {
 		got := readJobFile(t, jobDir, tc.file)
 		if got != tc.want {

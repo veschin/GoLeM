@@ -102,7 +102,7 @@ Feature: Job Lifecycle
     And the job directory contains file "prompt.txt"
     And the job directory contains file "workdir.txt" with content "/home/veschin/work/my-express-app"
     And the job directory contains file "permission_mode.txt" with content "bypassPermissions"
-    And the job directory contains file "model.txt" with content "opus=glm-4.7 sonnet=glm-4.7 haiku=glm-4.7"
+    And the job directory contains file "model.txt" with content "opus=glm-5 sonnet=glm-5 haiku=glm-5"
     And the job directory contains file "started_at.txt" with content "2026-02-27T14:32:05+03:00"
     And the job directory contains file "finished_at.txt" with content "2026-02-27T14:33:47+03:00"
     And the job directory contains file "raw.json"

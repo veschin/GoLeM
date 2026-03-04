@@ -4,9 +4,9 @@ api_key_file = "~/.config/GoLeM/zai_api_key"
 timeout_ms = "3000000"
 
 [providers.zai.models]
-opus = "glm-4.7"
-sonnet = "glm-4.7"
-haiku = "glm-4.7"
+opus = "glm-5"
+sonnet = "glm-5"
+haiku = "glm-5"
 
 [providers.custom]
 base_url = "https://my-proxy.example.com"

@@ -66,15 +66,15 @@ func DoctorCmd(opts DoctorOptions, w io.Writer) error {
 	}
 	opusModel := opts.OpusModel
 	if opusModel == "" {
-		opusModel = "glm-4.7"
+		opusModel = "glm-5"
 	}
 	sonnetModel := opts.SonnetModel
 	if sonnetModel == "" {
-		sonnetModel = "glm-4.7"
+		sonnetModel = "glm-5"
 	}
 	haikuModel := opts.HaikuModel
 	if haikuModel == "" {
-		haikuModel = "glm-4.7"
+		haikuModel = "glm-5"
 	}
 
 	var checks []CheckResult
@@ -294,10 +294,10 @@ func ConfigShowCmd(opts ConfigShowOptions, w io.Writer) error {
 
 	// Defaults.
 	defaults := map[string]string{
-		"model":              "glm-4.7",
-		"opus_model":         "glm-4.7",
-		"sonnet_model":       "glm-4.7",
-		"haiku_model":        "glm-4.7",
+		"model":              "glm-5",
+		"opus_model":         "glm-5",
+		"sonnet_model":       "glm-5",
+		"haiku_model":        "glm-5",
 		"permission_mode":    "bypassPermissions",
 		"max_parallel":       "3",
 		"debug":              "false",

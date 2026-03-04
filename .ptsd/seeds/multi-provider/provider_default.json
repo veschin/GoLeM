@@ -4,7 +4,7 @@
   "expected_env": {
     "ANTHROPIC_BASE_URL": "https://api.z.ai/api/anthropic",
     "ANTHROPIC_API_KEY_FILE": "/home/veschin/.config/GoLeM/api_key.txt",
-    "ANTHROPIC_MODEL": "glm-4.7",
+    "ANTHROPIC_MODEL": "glm-5",
     "CLAUDE_CODE_USE_BEDROCK": "",
     "CLAUDE_CODE_USE_VERTEX": ""
   }

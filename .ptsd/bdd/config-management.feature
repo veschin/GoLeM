@@ -15,7 +15,7 @@ Feature: Configuration Management
     And an API key file from seed "happy_path_api_key.txt" at "~/.config/GoLeM/zai_api_key"
     When config is loaded
     Then the config matches seed "expected_happy_path.json"
-    And the config "model" is "glm-4.7"
+    And the config "model" is "glm-5"
     And the config "permission_mode" is "acceptEdits"
     And the config "max_parallel" is 5
     And the config "zai_api_key" is "sk-zai-a1b2c3d4e5f6g7h8i9j0k1l2m3n4o5p6q7r8s9t0"
@@ -25,7 +25,7 @@ Feature: Configuration Management
     And an API key file from seed "happy_path_api_key.txt" at "~/.config/GoLeM/zai_api_key"
     When config is loaded
     Then the config matches seed "expected_defaults.json"
-    And the config "model" is "glm-4.7"
+    And the config "model" is "glm-5"
     And the config "permission_mode" is "bypassPermissions"
     And the config "max_parallel" is 3
     And the config "zai_base_url" is "https://api.z.ai/api/anthropic"
@@ -95,7 +95,7 @@ Feature: Configuration Management
     When config is loaded
     Then the config matches seed "expected_per_slot.json"
     And the config "model" is "glm-4.5"
-    And the config "opus_model" is "glm-4.7"
+    And the config "opus_model" is "glm-5"
     And the config "sonnet_model" is "glm-4.5"
     And the config "haiku_model" is "glm-4.0"
 
@@ -187,7 +187,7 @@ Feature: Configuration Management
     And an API key file from seed "happy_path_api_key.txt" at "~/.config/GoLeM/zai_api_key"
     When config is loaded
     Then the config struct has field "Model" with value "glm-4.5"
-    And the config struct has field "OpusModel" with value "glm-4.7"
+    And the config struct has field "OpusModel" with value "glm-5"
     And the config struct has field "SonnetModel" with value "glm-4.5"
     And the config struct has field "HaikuModel" with value "glm-4.0"
     And the config struct has field "PermissionMode" with value "bypassPermissions"
@@ -207,7 +207,7 @@ Feature: Configuration Management
     And the constant "ZaiAPITimeoutMs" is "3000000"
     And the constant "DefaultTimeout" is 3000
     And the constant "DefaultMaxParallel" is 3
-    And the constant "DefaultModel" is "glm-4.7"
+    And the constant "DefaultModel" is "glm-5"
     And the constant "DefaultPermissionMode" is "bypassPermissions"
 
   # --- Edge Cases ---
@@ -216,7 +216,7 @@ Feature: Configuration Management
     Given a config file from seed "unknown_keys.toml" at "~/.config/GoLeM/glm.toml"
     And an API key file from seed "happy_path_api_key.txt" at "~/.config/GoLeM/zai_api_key"
     When config is loaded
-    Then the config "model" is "glm-4.7"
+    Then the config "model" is "glm-5"
     And unknown keys are silently ignored
     And no error is returned
 

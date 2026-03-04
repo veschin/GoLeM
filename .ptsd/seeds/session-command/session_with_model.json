@@ -8,5 +8,5 @@
     "ANTHROPIC_DEFAULT_SONNET_MODEL": "glm-4.5",
     "ANTHROPIC_DEFAULT_HAIKU_MODEL": "glm-4.5"
   },
-  "note": "The -m flag sets the base model which overrides all three slots (opus, sonnet, haiku). Config priority: CLI flags > per-slot env vars > base GLM_MODEL > hardcoded glm-4.7."
+  "note": "The -m flag sets the base model which overrides all three slots (opus, sonnet, haiku). Config priority: CLI flags > per-slot env vars > base GLM_MODEL > hardcoded glm-5."
 }

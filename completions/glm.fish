@@ -34,10 +34,10 @@ set -l exec_commands session run start chain
 
 complete -c glm -n "__fish_seen_subcommand_from $exec_commands" -s d -d "Working directory" -x -a "(__fish_complete_directories)"
 complete -c glm -n "__fish_seen_subcommand_from $exec_commands" -s t -d "Timeout in seconds" -x
-complete -c glm -n "__fish_seen_subcommand_from $exec_commands" -s m -l model -d "Set all model slots" -x -a "glm-4.7 glm-4 glm-4-flash"
-complete -c glm -n "__fish_seen_subcommand_from $exec_commands" -l opus -d "Set opus model" -x -a "glm-4.7 glm-4 glm-4-flash"
-complete -c glm -n "__fish_seen_subcommand_from $exec_commands" -l sonnet -d "Set sonnet model" -x -a "glm-4.7 glm-4 glm-4-flash"
-complete -c glm -n "__fish_seen_subcommand_from $exec_commands" -l haiku -d "Set haiku model" -x -a "glm-4.7 glm-4 glm-4-flash"
+complete -c glm -n "__fish_seen_subcommand_from $exec_commands" -s m -l model -d "Set all model slots" -x -a "glm-5 glm-4 glm-4-flash"
+complete -c glm -n "__fish_seen_subcommand_from $exec_commands" -l opus -d "Set opus model" -x -a "glm-5 glm-4 glm-4-flash"
+complete -c glm -n "__fish_seen_subcommand_from $exec_commands" -l sonnet -d "Set sonnet model" -x -a "glm-5 glm-4 glm-4-flash"
+complete -c glm -n "__fish_seen_subcommand_from $exec_commands" -l haiku -d "Set haiku model" -x -a "glm-5 glm-4 glm-4-flash"
 complete -c glm -n "__fish_seen_subcommand_from $exec_commands" -l unsafe -d "Bypass all permission checks"
 complete -c glm -n "__fish_seen_subcommand_from $exec_commands" -l mode -d "Permission mode" -x -a "bypassPermissions acceptEdits plan"
 complete -c glm -n "__fish_seen_subcommand_from $exec_commands" -l json -d "JSON output format"

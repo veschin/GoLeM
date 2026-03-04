@@ -9,7 +9,7 @@ Feature: Session Command
   Background:
     Given the GoLeM CLI is installed and in PATH
     And the Z.AI API key is configured at "~/.config/GoLeM/zai_api_key"
-    And the default model is "glm-4.7"
+    And the default model is "glm-5"
 
   # --- AC1: glm session launches interactive claude session ---
 
@@ -64,9 +64,9 @@ Feature: Session Command
     When I run "glm session"
     Then the environment variable "ANTHROPIC_AUTH_TOKEN" is the configured API key
     And the environment variable "ANTHROPIC_BASE_URL" is "https://api.z.ai/api/anthropic"
-    And the environment variable "ANTHROPIC_DEFAULT_OPUS_MODEL" is "glm-4.7"
-    And the environment variable "ANTHROPIC_DEFAULT_SONNET_MODEL" is "glm-4.7"
-    And the environment variable "ANTHROPIC_DEFAULT_HAIKU_MODEL" is "glm-4.7"
+    And the environment variable "ANTHROPIC_DEFAULT_OPUS_MODEL" is "glm-5"
+    And the environment variable "ANTHROPIC_DEFAULT_SONNET_MODEL" is "glm-5"
+    And the environment variable "ANTHROPIC_DEFAULT_HAIKU_MODEL" is "glm-5"
 
   # --- AC4: Unsets CLAUDECODE and CLAUDE_CODE_ENTRYPOINT ---
 
@@ -99,7 +99,7 @@ Feature: Session Command
 
   Scenario: No flags provided launches with all defaults
     When I run "glm session"
-    Then claude is launched with the default model "glm-4.7"
+    Then claude is launched with the default model "glm-5"
     And the working directory is the current directory
     And no GoLeM-specific flags are set beyond defaults
 

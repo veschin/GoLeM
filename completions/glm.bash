@@ -34,7 +34,7 @@ _glm() {
                     return
                     ;;
                 -m|--model|--opus|--sonnet|--haiku)
-                    COMPREPLY=($(compgen -W "glm-4.7 glm-4 glm-4-flash" -- "$cur"))
+                    COMPREPLY=($(compgen -W "glm-5 glm-4 glm-4-flash" -- "$cur"))
                     return
                     ;;
                 --mode)

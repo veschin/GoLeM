@@ -59,13 +59,13 @@ Feature: Config Validation and Diagnostics
   # --- AC4: Report configured models ---
 
   Scenario: Doctor reports configured models
-    Given the config has models opus="glm-4.7" sonnet="glm-4.7" haiku="glm-4.7"
+    Given the config has models opus="glm-5" sonnet="glm-5" haiku="glm-5"
     When I run "glm doctor"
     Then the output should contain "models"
     And the output should contain "OK"
-    And the output should contain "opus=glm-4.7"
-    And the output should contain "sonnet=glm-4.7"
-    And the output should contain "haiku=glm-4.7"
+    And the output should contain "opus=glm-5"
+    And the output should contain "sonnet=glm-5"
+    And the output should contain "haiku=glm-5"
 
   # --- AC5: Report max_parallel and running job count ---
 
@@ -104,7 +104,7 @@ Feature: Config Validation and Diagnostics
     Given "claude" CLI is installed at "/usr/local/bin/claude" with version "v1.2.3"
     And a valid API key file exists at "~/.config/GoLeM/zai_api_key"
     And the Z.AI endpoint "https://api.z.ai/api/anthropic" responds with HTTP 200
-    And the config has models opus="glm-4.7" sonnet="glm-4.7" haiku="glm-4.7"
+    And the config has models opus="glm-5" sonnet="glm-5" haiku="glm-5"
     And max_parallel is 3
     And 2 jobs are currently running
     When I run "glm doctor"
@@ -120,11 +120,11 @@ Feature: Config Validation and Diagnostics
   Scenario: Config show displays effective configuration with mixed sources
     Given the config file "~/.config/GoLeM/glm.toml" contains:
       """
-      model = "glm-4.7"
+      model = "glm-5"
       """
     And the environment variable "GLM_PERMISSION_MODE" is set to "acceptEdits"
     When I run "glm config show"
-    Then the output should contain "model" with value "glm-4.7" and source "(config)"
+    Then the output should contain "model" with value "glm-5" and source "(config)"
     And the output should contain "permission_mode" with value "acceptEdits" and source "(env)"
     And the output should contain "max_parallel" with value "3" and source "(default)"
     And the output should contain "zai_base_url" with value "https://api.z.ai/api/anthropic" and source "(default)"
@@ -132,10 +132,10 @@ Feature: Config Validation and Diagnostics
   Scenario: Config show with no config file shows all defaults
     Given no config file exists at "~/.config/GoLeM/glm.toml"
     When I run "glm config show"
-    Then the output should contain "model" with value "glm-4.7" and source "(default)"
-    And the output should contain "opus_model" with value "glm-4.7" and source "(default)"
-    And the output should contain "sonnet_model" with value "glm-4.7" and source "(default)"
-    And the output should contain "haiku_model" with value "glm-4.7" and source "(default)"
+    Then the output should contain "model" with value "glm-5" and source "(default)"
+    And the output should contain "opus_model" with value "glm-5" and source "(default)"
+    And the output should contain "sonnet_model" with value "glm-5" and source "(default)"
+    And the output should contain "haiku_model" with value "glm-5" and source "(default)"
     And the output should contain "permission_mode" with value "bypassPermissions" and source "(default)"
     And the output should contain "max_parallel" with value "3" and source "(default)"
     And the output should contain "zai_base_url" with value "https://api.z.ai/api/anthropic" and source "(default)"

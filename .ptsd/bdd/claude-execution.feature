@@ -17,14 +17,14 @@ Feature: Claude Execution Engine
       | zai_api_key        | zai-key-abc123def456              |
       | zai_base_url       | https://api.z.ai/api/anthropic    |
       | zai_api_timeout_ms | 3000000                           |
-      | opus_model         | glm-4.7                           |
+      | opus_model         | glm-5                           |
       | sonnet_model       | glm-4.5                           |
       | haiku_model        | glm-4.0                           |
     When the execution environment is built
     Then the env var "ANTHROPIC_AUTH_TOKEN" is "zai-key-abc123def456"
     And the env var "ANTHROPIC_BASE_URL" is "https://api.z.ai/api/anthropic"
     And the env var "API_TIMEOUT_MS" is "3000000"
-    And the env var "ANTHROPIC_DEFAULT_OPUS_MODEL" is "glm-4.7"
+    And the env var "ANTHROPIC_DEFAULT_OPUS_MODEL" is "glm-5"
     And the env var "ANTHROPIC_DEFAULT_SONNET_MODEL" is "glm-4.5"
     And the env var "ANTHROPIC_DEFAULT_HAIKU_MODEL" is "glm-4.0"
 
@@ -171,12 +171,12 @@ Feature: Claude Execution Engine
     Given the prompt is "Analyze the code"
     And the working directory is "/home/veschin/work/project"
     And the permission mode is "bypassPermissions"
-    And the models are opus=glm-4.7 sonnet=glm-4.7 haiku=glm-4.7
+    And the models are opus=glm-5 sonnet=glm-5 haiku=glm-5
     When execution begins
     Then "prompt.txt" is written with "Analyze the code"
     And "workdir.txt" is written with "/home/veschin/work/project"
     And "permission_mode.txt" is written with "bypassPermissions"
-    And "model.txt" is written with "opus=glm-4.7 sonnet=glm-4.7 haiku=glm-4.7"
+    And "model.txt" is written with "opus=glm-5 sonnet=glm-5 haiku=glm-5"
     And "started_at.txt" is written with the current time in ISO 8601 format
 
   Scenario: Finished_at written after execution completes

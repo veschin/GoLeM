@@ -353,7 +353,7 @@ func TestCompletedJobHasAllExpectedArtifacts(t *testing.T) {
 	assertFileExists(t, filepath.Join(dir, "prompt.txt"))
 	assertFileContains(t, filepath.Join(dir, "workdir.txt"), "/home/veschin/work/my-express-app")
 	assertFileContains(t, filepath.Join(dir, "permission_mode.txt"), "bypassPermissions")
-	assertFileContains(t, filepath.Join(dir, "model.txt"), "opus=glm-4.7 sonnet=glm-4.7 haiku=glm-4.7")
+	assertFileContains(t, filepath.Join(dir, "model.txt"), "opus=glm-5 sonnet=glm-5 haiku=glm-5")
 	assertFileContains(t, filepath.Join(dir, "started_at.txt"), "2026-02-27T14:32:05+03:00")
 	assertFileContains(t, filepath.Join(dir, "finished_at.txt"), "2026-02-27T14:33:47+03:00")
 	assertFileExists(t, filepath.Join(dir, "raw.json"))

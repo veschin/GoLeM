@@ -1,9 +1,9 @@
 features:
   agent-chaining:
-    stage: impl
+    stage: prd
     hashes:
       bdd: cd251b7ae9c78e77e6b9cafa421438786ad5bccbce6137707740690c6bcd6444
-      prd: de18c75765dd820169840a618c2efac5e9f3682edefb72ac9e8756e8a1b5e1e1
+      prd: fda6e5de17e38f18428f6a262822ea755243dc21f97025f915a13d83141a322a
       seed: 5d2a9b8ac4a2288cc8316cb1f67a9553ae25224795f18169216f6bdab18f277f
       test: ba8df48a7a8ae4397751073f688aabaa2fa3ca81bcebb521e2d891f654189a4b
     scores:
@@ -13,6 +13,9 @@ features:
       impl:
         score: 8
         at: "2026-02-28T12:16:42.014062836+03:00"
+      prd:
+        score: 8
+        at: "2026-03-04T13:13:17.210082105+03:00"
       seed:
         score: 7
         at: "2026-02-27T21:13:33.905357627+03:00"
@@ -22,12 +25,12 @@ features:
     tests:
       - .ptsd/bdd/agent-chaining.feature::internal/cmd/chain_test.go
   claude-execution:
-    stage: impl
+    stage: prd
     hashes:
-      bdd: 0dc1883a73121226c18cbf6c57a6a598d686614a1998390f3f1424396ed8acf0
-      prd: de18c75765dd820169840a618c2efac5e9f3682edefb72ac9e8756e8a1b5e1e1
+      bdd: ed14201f7261b2d9d383a04f233b62eaf635ff1d5da70d343ba73cbb7c3d18c6
+      prd: fda6e5de17e38f18428f6a262822ea755243dc21f97025f915a13d83141a322a
       seed: fe2550b40b1ab0919b12c81de23d25530b4d9e9390c28152a7ca6e9ef35ef12e
-      test: 1d89187a076e28eb6da306cf804bdb2b38f6ad2b5902c7d3f9cce0e4b634823b
+      test: 6933bce752d817f3d30efb1c3caada89d6ff47d070fcc819546ed0c97aa60a23
     scores:
       bdd:
         score: 8
@@ -35,6 +38,9 @@ features:
       impl:
         score: 8
         at: "2026-02-28T12:16:41.999131478+03:00"
+      prd:
+        score: 8
+        at: "2026-03-04T13:13:17.200407126+03:00"
       seed:
         score: 7
         at: "2026-02-27T21:13:33.901201838+03:00"
@@ -44,10 +50,10 @@ features:
     tests:
       - .ptsd/bdd/claude-execution.feature::internal/claude/claude_test.go
   concurrency-control:
-    stage: impl
+    stage: prd
     hashes:
       bdd: 9edbb97537604cfda3a35b845759793b9ce58e7edb45e3be3a0ec2e538798877
-      prd: de18c75765dd820169840a618c2efac5e9f3682edefb72ac9e8756e8a1b5e1e1
+      prd: fda6e5de17e38f18428f6a262822ea755243dc21f97025f915a13d83141a322a
       seed: 7d568668a01ba3a54a609f2c366f187d9b795b797dce33e5cbc5cf44d2578205
       test: f8d44efe4494d969e706c61842261476da27120116a27c50cbefc07fe3e5d4ac
     scores:
@@ -57,6 +63,9 @@ features:
       impl:
         score: 8
         at: "2026-02-28T12:16:41.9984489+03:00"
+      prd:
+        score: 8
+        at: "2026-03-04T13:13:17.19482209+03:00"
       seed:
         score: 7
         at: "2026-02-27T21:07:40.970751173+03:00"
@@ -66,12 +75,12 @@ features:
     tests:
       - .ptsd/bdd/concurrency-control.feature::internal/slot/slot_test.go
   config-diagnostics:
-    stage: impl
+    stage: prd
     hashes:
-      bdd: 8e016e133470ec9cf590c8d51d8864620607c424e7513de666483568189eab92
-      prd: de18c75765dd820169840a618c2efac5e9f3682edefb72ac9e8756e8a1b5e1e1
+      bdd: 1b680d95dfad88b7f36d765d4797cd15f020229eb6a43fc7397bf5abd6b6358c
+      prd: fda6e5de17e38f18428f6a262822ea755243dc21f97025f915a13d83141a322a
       seed: c7da2fa92d7d61f089c29a074157803abd4a97bbf2cb1bccbd36d743e88fdfe5
-      test: aa5220bf32473c4fcdbdf02ebe750efb0cae77217f2bdb91457747adcd068002
+      test: 8f75a10adda1a6aec4e469972d941265d0299c89f001f4b180a50f0e461bdca4
     scores:
       bdd:
         score: 8
@@ -79,6 +88,9 @@ features:
       impl:
         score: 8
         at: "2026-02-28T12:16:42.012722779+03:00"
+      prd:
+        score: 8
+        at: "2026-03-04T13:13:17.204964053+03:00"
       seed:
         score: 7
         at: "2026-02-27T21:13:33.904509743+03:00"
@@ -88,12 +100,12 @@ features:
     tests:
       - .ptsd/bdd/config-diagnostics.feature::internal/config/config_test.go
   config-management:
-    stage: impl
+    stage: prd
     hashes:
-      bdd: 9cc8d59ecea05a6782b1b9c14b1eee14a29f2cbf2eda4e2d652a4771bf60501b
-      prd: de18c75765dd820169840a618c2efac5e9f3682edefb72ac9e8756e8a1b5e1e1
+      bdd: 1961f534688bed5d12121ef5adfa62d8d08d3ecdaf4614e432253afe08c2e5e1
+      prd: fda6e5de17e38f18428f6a262822ea755243dc21f97025f915a13d83141a322a
       seed: efb72c0b2431a9bd897f71427671622387253f6fb2b40c656cdbee69ef3f96b1
-      test: aa5220bf32473c4fcdbdf02ebe750efb0cae77217f2bdb91457747adcd068002
+      test: 8f75a10adda1a6aec4e469972d941265d0299c89f001f4b180a50f0e461bdca4
       test_results: passed:0 failed:0
       test_status: failing
     scores:
@@ -103,6 +115,9 @@ features:
       impl:
         score: 8
         at: "2026-02-28T12:16:41.996936584+03:00"
+      prd:
+        score: 8
+        at: "2026-03-04T13:13:17.201305066+03:00"
       seed:
         score: 8
         at: "2026-02-27T21:03:04.205557366+03:00"
@@ -112,12 +127,12 @@ features:
     tests:
       - .ptsd/bdd/config-management.feature::internal/config/config_test.go
   core-commands:
-    stage: impl
+    stage: prd
     hashes:
-      bdd: d9e6a2502d43da072eecb047e40e61ef4eb91a57fca69721eec77e753778a58d
-      prd: de18c75765dd820169840a618c2efac5e9f3682edefb72ac9e8756e8a1b5e1e1
+      bdd: 2894eb4a378a7effd8ef5aa2c09b54fdd030641ad0d379226d364e025a3008fc
+      prd: fda6e5de17e38f18428f6a262822ea755243dc21f97025f915a13d83141a322a
       seed: ea2166410e9b6c8f606d7a7a93d7538ff2d6244b24be3a77870cb6dad28e6a27
-      test: 0dffb79d9c5a8977f9a570b2816038e262fc67111c318655a5616abf3f1f59c4
+      test: 29a199a6bf6900db11101059de9d589d156ae770f8e21afd9d9e8e657cec33e2
     scores:
       bdd:
         score: 8
@@ -125,6 +140,9 @@ features:
       impl:
         score: 8
         at: "2026-02-28T12:16:41.999778908+03:00"
+      prd:
+        score: 8
+        at: "2026-03-04T13:13:17.19577214+03:00"
       seed:
         score: 7
         at: "2026-02-27T21:07:40.971640646+03:00"
@@ -134,12 +152,12 @@ features:
     tests:
       - .ptsd/bdd/core-commands.feature::internal/cmd/cmd_test.go
   cost-tracking:
-    stage: impl
+    stage: prd
     hashes:
       bdd: af8aaab0bf35deed7b3fd932c75a060ff76d0796257612cce44516bf698bc25f
-      prd: de18c75765dd820169840a618c2efac5e9f3682edefb72ac9e8756e8a1b5e1e1
+      prd: fda6e5de17e38f18428f6a262822ea755243dc21f97025f915a13d83141a322a
       seed: 6d151d5027c7e73a4500423cf7467aa5e1385310e1d0bf42b0d3648406c662a8
-      test: 1d89187a076e28eb6da306cf804bdb2b38f6ad2b5902c7d3f9cce0e4b634823b
+      test: 6933bce752d817f3d30efb1c3caada89d6ff47d070fcc819546ed0c97aa60a23
     scores:
       bdd:
         score: 8
@@ -147,6 +165,9 @@ features:
       impl:
         score: 8
         at: "2026-02-28T12:16:42.015347757+03:00"
+      prd:
+        score: 8
+        at: "2026-03-04T13:13:17.196679728+03:00"
       seed:
         score: 8
         at: "2026-02-27T21:07:40.976105488+03:00"
@@ -156,10 +177,10 @@ features:
     tests:
       - .ptsd/bdd/cost-tracking.feature::internal/claude/claude_test.go
   error-taxonomy:
-    stage: impl
+    stage: prd
     hashes:
       bdd: 5a02aad8fdc2c78c738f4c7d637b8d23ea815bf6723ac515b4cadec606c45525
-      prd: de18c75765dd820169840a618c2efac5e9f3682edefb72ac9e8756e8a1b5e1e1
+      prd: fda6e5de17e38f18428f6a262822ea755243dc21f97025f915a13d83141a322a
       seed: 4c8728fc2515ae61d6e10e4f8315ca88b0d28363e695b1eb02fefc9a0803f939
       test: 039eb28865009bef2e5f6997a3d1bdfc3a7c7788a70f99759c1cb1b60e231b1a
     scores:
@@ -169,6 +190,9 @@ features:
       impl:
         score: 8
         at: "2026-02-28T12:16:42.003821881+03:00"
+      prd:
+        score: 8
+        at: "2026-03-04T13:13:17.202183799+03:00"
       seed:
         score: 7
         at: "2026-02-27T21:07:40.973946353+03:00"
@@ -178,12 +202,12 @@ features:
     tests:
       - .ptsd/bdd/error-taxonomy.feature::internal/exitcode/exitcode_test.go
   install-update:
-    stage: impl
+    stage: prd
     hashes:
       bdd: 8312bb9c40014f9b5628ab08a52be86b347317b0d7779b8cc6f2a032568c7b0d
-      prd: de18c75765dd820169840a618c2efac5e9f3682edefb72ac9e8756e8a1b5e1e1
+      prd: fda6e5de17e38f18428f6a262822ea755243dc21f97025f915a13d83141a322a
       seed: 92553d67256076dbd6a4d5f9a73f711e1808a9b908f130cf139a4be557114803
-      test: 0dffb79d9c5a8977f9a570b2816038e262fc67111c318655a5616abf3f1f59c4
+      test: 29a199a6bf6900db11101059de9d589d156ae770f8e21afd9d9e8e657cec33e2
     scores:
       bdd:
         score: 8
@@ -191,6 +215,9 @@ features:
       impl:
         score: 8
         at: "2026-02-28T12:16:42.001859823+03:00"
+      prd:
+        score: 8
+        at: "2026-03-04T13:13:17.205846584+03:00"
       seed:
         score: 7
         at: "2026-02-27T21:13:33.902922874+03:00"
@@ -201,10 +228,10 @@ features:
       - .ptsd/bdd/install-update.feature::internal/cmd/cmd_test.go
       - .ptsd/bdd/install-update.feature::internal/cmd/install_test.go
   job-filtering:
-    stage: impl
+    stage: prd
     hashes:
       bdd: 1bd2c97197e2635ee46451b0d665211266482fe22330caffc4c701f416cf29ec
-      prd: de18c75765dd820169840a618c2efac5e9f3682edefb72ac9e8756e8a1b5e1e1
+      prd: fda6e5de17e38f18428f6a262822ea755243dc21f97025f915a13d83141a322a
       seed: 38e995e5451e1f28b1e498df49245af4b0d15b26bd2c0338f85da003e3af2944
       test: 2ebd0089fbb9075e70155805e7f1f12ee62d242bca58a82c612836c0ca59510c
     scores:
@@ -214,6 +241,9 @@ features:
       impl:
         score: 8
         at: "2026-02-28T16:10:13.096198458+03:00"
+      prd:
+        score: 8
+        at: "2026-03-04T13:13:17.203241875+03:00"
       seed:
         score: 8
         at: "2026-02-27T21:07:40.97469171+03:00"
@@ -223,12 +253,12 @@ features:
     tests:
       - .ptsd/bdd/job-filtering.feature::internal/cmd/filter_test.go
   job-lifecycle:
-    stage: impl
+    stage: prd
     hashes:
-      bdd: 8643a84af738bc9288982be7325e1a6a6b529f1dcefecc6d1cd397743e3e34a4
-      prd: de18c75765dd820169840a618c2efac5e9f3682edefb72ac9e8756e8a1b5e1e1
+      bdd: 612d790f663bfd3dd7d4d1bd2547671f949a1f206225ccc2dae9c5d0251dd86e
+      prd: fda6e5de17e38f18428f6a262822ea755243dc21f97025f915a13d83141a322a
       seed: 2857457e5e9447fa6002dea547a7b39d54319d3710a98db5b328298749445292
-      test: adca98a56a175cf68ad67c6d07fae6c5f066e058591436080e1e0b55db62e3d1
+      test: de68ec8d07b1c881878029a86bf2ef341c809820b1e2af50dae694d0ce61d93b
     scores:
       bdd:
         score: 8
@@ -236,6 +266,9 @@ features:
       impl:
         score: 8
         at: "2026-02-28T12:16:41.99771264+03:00"
+      prd:
+        score: 8
+        at: "2026-03-04T13:13:17.208395034+03:00"
       seed:
         score: 7
         at: "2026-02-28T09:17:27.094516357+03:00"
@@ -245,10 +278,10 @@ features:
     tests:
       - .ptsd/bdd/job-lifecycle.feature::internal/job/job_test.go
   job-management:
-    stage: impl
+    stage: prd
     hashes:
       bdd: 64b04e67466c12c8fa172129d33ed2568ca329d505c1e6348b96047cd40a6ca7
-      prd: de18c75765dd820169840a618c2efac5e9f3682edefb72ac9e8756e8a1b5e1e1
+      prd: fda6e5de17e38f18428f6a262822ea755243dc21f97025f915a13d83141a322a
       seed: 40beaffa31fb085827d7b8ffec00a5f78a041db3820b00efcff448931987b850
       test: 608afe1af10a7ec2e5f77480c37832cc0746d696311bd868f54d36216cd45b8f
     scores:
@@ -258,6 +291,9 @@ features:
       impl:
         score: 8
         at: "2026-02-28T12:16:42.000522682+03:00"
+      prd:
+        score: 8
+        at: "2026-03-04T13:13:17.206719946+03:00"
       seed:
         score: 7
         at: "2026-02-27T21:07:40.972495093+03:00"
@@ -267,10 +303,10 @@ features:
     tests:
       - .ptsd/bdd/job-management.feature::internal/cmd/management_test.go
   json-output:
-    stage: impl
+    stage: prd
     hashes:
       bdd: 80e3d64456bc10fd628c44ce0c2978f3e5fa0c9ab28bf97cc88cd66ce7981866
-      prd: de18c75765dd820169840a618c2efac5e9f3682edefb72ac9e8756e8a1b5e1e1
+      prd: fda6e5de17e38f18428f6a262822ea755243dc21f97025f915a13d83141a322a
       seed: 3578c64a725757700bff2c9b346098d4d4364e83347b33365925930f7d581193
       test: e1fb686163dcb081b6c302936d0a643bc9317978f28fcb2383b6cb7e3c3d2f17
     scores:
@@ -280,6 +316,9 @@ features:
       impl:
         score: 8
         at: "2026-02-28T16:10:12.557955751+03:00"
+      prd:
+        score: 8
+        at: "2026-03-04T13:13:17.197610771+03:00"
       seed:
         score: 7
         at: "2026-02-27T21:13:33.903726042+03:00"
@@ -289,12 +328,12 @@ features:
     tests:
       - .ptsd/bdd/json-output.feature::internal/cmd/json_test.go
   multi-provider:
-    stage: impl
+    stage: prd
     hashes:
-      bdd: 0a178d83874b0725801469daf4de760290dece53e7eb544d358c721fc21270cb
-      prd: de18c75765dd820169840a618c2efac5e9f3682edefb72ac9e8756e8a1b5e1e1
+      bdd: 391417bc6dc0f6b240cecec98b675dfda89ed049df5fcbfc476990be02193f55
+      prd: fda6e5de17e38f18428f6a262822ea755243dc21f97025f915a13d83141a322a
       seed: c2c80064352aa737713afe54edf624461eb615fe4c8e94a52b4fba685b02dfc9
-      test: aa5220bf32473c4fcdbdf02ebe750efb0cae77217f2bdb91457747adcd068002
+      test: 8f75a10adda1a6aec4e469972d941265d0299c89f001f4b180a50f0e461bdca4
     scores:
       bdd:
         score: 8
@@ -302,6 +341,9 @@ features:
       impl:
         score: 8
         at: "2026-02-28T12:16:42.014688955+03:00"
+      prd:
+        score: 8
+        at: "2026-03-04T13:13:17.198559858+03:00"
       seed:
         score: 7
         at: "2026-02-27T21:13:33.906097675+03:00"
@@ -311,12 +353,12 @@ features:
     tests:
       - .ptsd/bdd/multi-provider.feature::internal/config/config_test.go
   output-streaming:
-    stage: impl
+    stage: prd
     hashes:
       bdd: 0239fe61f7f3f8a877c03326cac421803f439d303047de66375bc2c4c2db8599
-      prd: de18c75765dd820169840a618c2efac5e9f3682edefb72ac9e8756e8a1b5e1e1
+      prd: fda6e5de17e38f18428f6a262822ea755243dc21f97025f915a13d83141a322a
       seed: 02d04cc3a7c24f12dc8005df40f7e0b21ef7f9bc197902a4224fef02f3c3e5cf
-      test: 1d89187a076e28eb6da306cf804bdb2b38f6ad2b5902c7d3f9cce0e4b634823b
+      test: 6933bce752d817f3d30efb1c3caada89d6ff47d070fcc819546ed0c97aa60a23
     scores:
       bdd:
         score: 8
@@ -324,6 +366,9 @@ features:
       impl:
         score: 8
         at: "2026-02-28T12:16:42.013398163+03:00"
+      prd:
+        score: 8
+        at: "2026-03-04T13:13:17.204121159+03:00"
       seed:
         score: 7
         at: "2026-02-27T21:07:40.975398053+03:00"
@@ -333,12 +378,12 @@ features:
     tests:
       - .ptsd/bdd/output-streaming.feature::internal/claude/claude_test.go
   session-command:
-    stage: impl
+    stage: prd
     hashes:
-      bdd: b3d6dd21d3f14ff3f3b0588e5ae02de2c0e6548d4377cd6bd48c72f6988cf7bd
-      prd: de18c75765dd820169840a618c2efac5e9f3682edefb72ac9e8756e8a1b5e1e1
+      bdd: 0a7be8c4106a22dcbc683c072c8bb15845cdc60bfa73d324049bfa43c1044a9d
+      prd: fda6e5de17e38f18428f6a262822ea755243dc21f97025f915a13d83141a322a
       seed: ab99f2cc0b276a3922daa950b1ad0e30d3fb92bb319036c19f6caac1b186dfe9
-      test: f80ecc544b278b52070a5fe2ccea3b8b337292f044d77ee38bff6b54699d4901
+      test: 1b5ef45b8944bd28de6b4db6a47b4608a040e48fa896649ba2904711f3036cb2
     scores:
       bdd:
         score: 8
@@ -346,6 +391,9 @@ features:
       impl:
         score: 8
         at: "2026-02-28T12:16:42.001191493+03:00"
+      prd:
+        score: 8
+        at: "2026-03-04T13:13:17.199493206+03:00"
       seed:
         score: 7
         at: "2026-02-27T21:13:33.902068998+03:00"
@@ -355,10 +403,10 @@ features:
     tests:
       - .ptsd/bdd/session-command.feature::internal/cmd/session_test.go
   stale-recovery:
-    stage: impl
+    stage: prd
     hashes:
       bdd: 53ae559e0556ac7c5badc55d7ffc134df43a095e4c4751e0f84748687c41f313
-      prd: de18c75765dd820169840a618c2efac5e9f3682edefb72ac9e8756e8a1b5e1e1
+      prd: fda6e5de17e38f18428f6a262822ea755243dc21f97025f915a13d83141a322a
       seed: d825981ecaad56d2f59285a1a7518f5e14ff8477731deec8a039b2d08955343c
       test: aa7d67d77168fd56994d5d3456e73d134f36e43ed2561f3721a589139cf85d7b
     scores:
@@ -368,6 +416,9 @@ features:
       impl:
         score: 8
         at: "2026-02-28T12:16:42.002495831+03:00"
+      prd:
+        score: 8
+        at: "2026-03-04T13:13:17.209263257+03:00"
       seed:
         score: 7
         at: "2026-02-27T21:07:40.973280177+03:00"
@@ -377,10 +428,10 @@ features:
     tests:
       - .ptsd/bdd/stale-recovery.feature::internal/job/reconcile_test.go
   structured-logging:
-    stage: impl
+    stage: prd
     hashes:
       bdd: 966684b1c9d5b45d9ae5513c8ab1132fbbbaa238abd8c6384f6fd59cc85ca79a
-      prd: de18c75765dd820169840a618c2efac5e9f3682edefb72ac9e8756e8a1b5e1e1
+      prd: fda6e5de17e38f18428f6a262822ea755243dc21f97025f915a13d83141a322a
       seed: c305264767d6481e87e0ffffd0e743243ed7a19e73000de606b02cb09c13f9c1
       test: 95691dc6b4d96bf3f35c59ad2238715d02f6d3a81e93d7a0430b04e0d41d91cb
     scores:
@@ -390,6 +441,9 @@ features:
       impl:
         score: 8
         at: "2026-02-28T16:10:13.608840244+03:00"
+      prd:
+        score: 8
+        at: "2026-03-04T13:13:17.207548863+03:00"
       seed:
         score: 7
         at: "2026-02-27T21:13:33.906813065+03:00"

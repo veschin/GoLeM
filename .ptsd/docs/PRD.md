@@ -43,13 +43,13 @@ Load, validate, and expose configuration for all GoLeM operations.
 **Acceptance Criteria:**
 - AC1: Reads TOML config from `~/.config/GoLeM/glm.toml`. If file does not exist, uses defaults without error.
 - AC2: Reads API key from `~/.config/GoLeM/zai_api_key`. Supports two formats: (a) raw key as the only content (stripped of whitespace), (b) legacy shell assignment `ZAI_API_KEY="value"` (extracts value from quotes). Falls back to `~/.config/zai/env` for legacy compatibility. Returns `err:config API key file not found` with setup instructions when neither exists.
-- AC3: Environment variables override TOML values. Priority order: CLI flags > env vars > per-slot TOML values > base TOML `model` > hardcoded default `glm-4.7`.
+- AC3: Environment variables override TOML values. Priority order: CLI flags > env vars > per-slot TOML values > base TOML `model` > hardcoded default `glm-5`.
 - AC4: Supported env vars: `GLM_MODEL`, `GLM_OPUS_MODEL`, `GLM_SONNET_MODEL`, `GLM_HAIKU_MODEL`, `GLM_PERMISSION_MODE`, `GLM_MAX_PARALLEL`, `GLM_DEBUG`.
 - AC5: Validates at load time: API key is non-empty string, `max_parallel` is non-negative integer (0 = unlimited), `permission_mode` is one of `bypassPermissions`, `acceptEdits`, `default`, `plan` (exhaustive list — reject other values).
 - AC6: Returns typed `err:validation` with field name and reason for invalid config values.
 - AC7: Creates `~/.claude/subagents/` directory on first load if it does not exist.
 - AC8: Config struct exposes: `Model`, `OpusModel`, `SonnetModel`, `HaikuModel`, `PermissionMode`, `MaxParallel`, `SubagentDir`, `ConfigDir`, `ZaiBaseURL`, `ZaiAPIKey`, `ZaiAPITimeoutMs`, `Debug`.
-- AC9: Hardcoded constants: `ZaiBaseURL = "https://api.z.ai/api/anthropic"`, `ZaiAPITimeoutMs = "3000000"`, `DefaultTimeout = 3000` (seconds), `DefaultMaxParallel = 3`, `DefaultModel = "glm-4.7"`, `DefaultPermissionMode = "bypassPermissions"`.
+- AC9: Hardcoded constants: `ZaiBaseURL = "https://api.z.ai/api/anthropic"`, `ZaiAPITimeoutMs = "3000000"`, `DefaultTimeout = 3000` (seconds), `DefaultMaxParallel = 3`, `DefaultModel = "glm-5"`, `DefaultPermissionMode = "bypassPermissions"`.
 
 **Non-goals:**
 - GUI config editor.
@@ -604,7 +604,7 @@ Configure multiple API providers beyond Z.AI.
   ```
 - AC2: `--provider NAME` flag selects provider. Default provider is `zai`.
 - AC3: `default_provider = "zai"` in TOML sets the default.
-- AC4: Per-provider model mappings: `[providers.zai.models]` section with `opus = "glm-4.7"`, `sonnet = "glm-4.7"`, `haiku = "glm-4.7"`.
+- AC4: Per-provider model mappings: `[providers.zai.models]` section with `opus = "glm-5"`, `sonnet = "glm-5"`, `haiku = "glm-5"`.
 - AC5: `glm doctor --provider NAME` tests specific provider connectivity.
 - AC6: Missing provider returns `err:user "Unknown provider: {name}. Available: zai, custom"`.
 

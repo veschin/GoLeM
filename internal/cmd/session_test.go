@@ -194,9 +194,9 @@ func TestZAIEnvironmentVariablesAreSetForSession(t *testing.T) {
 
 	assertEnvPresent(t, res.Env, "ANTHROPIC_AUTH_TOKEN", "sk-zai-key")
 	assertEnvPresent(t, res.Env, "ANTHROPIC_BASE_URL", "https://api.z.ai/api/anthropic")
-	assertEnvPresent(t, res.Env, "ANTHROPIC_DEFAULT_OPUS_MODEL", "glm-4.7")
-	assertEnvPresent(t, res.Env, "ANTHROPIC_DEFAULT_SONNET_MODEL", "glm-4.7")
-	assertEnvPresent(t, res.Env, "ANTHROPIC_DEFAULT_HAIKU_MODEL", "glm-4.7")
+	assertEnvPresent(t, res.Env, "ANTHROPIC_DEFAULT_OPUS_MODEL", "glm-5")
+	assertEnvPresent(t, res.Env, "ANTHROPIC_DEFAULT_SONNET_MODEL", "glm-5")
+	assertEnvPresent(t, res.Env, "ANTHROPIC_DEFAULT_HAIKU_MODEL", "glm-5")
 }
 
 // ---------------------------------------------------------------------------
@@ -263,9 +263,9 @@ func TestNoFlagsProvidedLaunchesWithAllDefaults(t *testing.T) {
 	cfg := newSessionConfig(t)
 	res := runSession(t, cfg, nil)
 
-	assertEnvPresent(t, res.Env, "ANTHROPIC_DEFAULT_OPUS_MODEL", "glm-4.7")
-	assertEnvPresent(t, res.Env, "ANTHROPIC_DEFAULT_SONNET_MODEL", "glm-4.7")
-	assertEnvPresent(t, res.Env, "ANTHROPIC_DEFAULT_HAIKU_MODEL", "glm-4.7")
+	assertEnvPresent(t, res.Env, "ANTHROPIC_DEFAULT_OPUS_MODEL", "glm-5")
+	assertEnvPresent(t, res.Env, "ANTHROPIC_DEFAULT_SONNET_MODEL", "glm-5")
+	assertEnvPresent(t, res.Env, "ANTHROPIC_DEFAULT_HAIKU_MODEL", "glm-5")
 
 	// No GoLeM-specific args leaked to argv.
 	assertArgAbsent(t, res.Argv, "-d")
