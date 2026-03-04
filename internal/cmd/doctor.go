@@ -12,6 +12,8 @@ import (
 	"strconv"
 	"strings"
 	"time"
+
+	"github.com/veschin/GoLeM/internal/config"
 )
 
 // CheckResult holds the result of a single diagnostic check.
@@ -66,15 +68,15 @@ func DoctorCmd(opts DoctorOptions, w io.Writer) error {
 	}
 	opusModel := opts.OpusModel
 	if opusModel == "" {
-		opusModel = "glm-5"
+		opusModel = config.DefaultModel
 	}
 	sonnetModel := opts.SonnetModel
 	if sonnetModel == "" {
-		sonnetModel = "glm-5"
+		sonnetModel = config.DefaultModel
 	}
 	haikuModel := opts.HaikuModel
 	if haikuModel == "" {
-		haikuModel = "glm-5"
+		haikuModel = config.DefaultModel
 	}
 
 	var checks []CheckResult
@@ -294,15 +296,15 @@ func ConfigShowCmd(opts ConfigShowOptions, w io.Writer) error {
 
 	// Defaults.
 	defaults := map[string]string{
-		"model":              "glm-5",
-		"opus_model":         "glm-5",
-		"sonnet_model":       "glm-5",
-		"haiku_model":        "glm-5",
-		"permission_mode":    "bypassPermissions",
-		"max_parallel":       "3",
+		"model":              config.DefaultModel,
+		"opus_model":         config.DefaultModel,
+		"sonnet_model":       config.DefaultModel,
+		"haiku_model":        config.DefaultModel,
+		"permission_mode":    config.DefaultPermissionMode,
+		"max_parallel":       strconv.Itoa(config.DefaultMaxParallel),
 		"debug":              "false",
-		"zai_base_url":       "https://api.z.ai/api/anthropic",
-		"zai_api_timeout_ms": "3000000",
+		"zai_base_url":       config.ZaiBaseURL,
+		"zai_api_timeout_ms": config.ZaiAPITimeoutMs,
 		"subagent_dir":       opts.SubagentDir,
 		"config_dir":         opts.ConfigDir,
 	}

@@ -19,7 +19,7 @@ import (
 	"github.com/veschin/GoLeM/internal/log"
 )
 
-const version = "1.1.2"
+const version = "1.1.3"
 
 // logger is the global structured logger, initialized in run().
 var logger *log.Logger
