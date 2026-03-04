@@ -18,217 +18,241 @@
 
 ![Architecture](docs/architecture.svg?v=4)
 
-## Table of Contents
+## установка
 
-- [Install](#install)
-- [Update](#update)
-- [Uninstall](#uninstall)
-- [Usage](#usage)
-- [Flags](#flags)
-- [Config](#config)
-- [How Claude Code uses it](#how-claude-code-uses-it)
-- [Response format](#response-format)
-- [Files](#files)
-- [Platforms](#platforms)
-- [Audit](#audit)
-- [Troubleshooting](#troubleshooting)
-
-## Install
-
-Requires: [Claude Code CLI](https://docs.anthropic.com/en/docs/claude-code), [Z.AI Coding Plan](https://z.ai/subscribe) key, Go 1.25+.
+Нужно: [Claude Code CLI](https://docs.anthropic.com/en/docs/claude-code), ключ [Z.AI Coding Plan](https://z.ai/subscribe), Go 1.25+.
 
 ```bash
 go install github.com/veschin/GoLeM/cmd/glm@latest
-```
-
-Or build from source:
-```bash
-git clone https://github.com/veschin/GoLeM.git
-cd GoLeM
-go build -o ~/.local/bin/glm ./cmd/glm/
 glm _install
 ```
 
-`_install` creates `~/.config/GoLeM/`, asks for Z.AI API key, symlinks the binary, and injects delegation instructions into `~/.claude/CLAUDE.md`.
+Или из исходников:
 
-Shell completions are installed automatically:
+```bash
+git clone https://github.com/veschin/GoLeM.git
+cd GoLeM
+go build -o glm ./cmd/glm/
+./glm _install
+```
+
+`_install` делает следующее: создаёт `~/.config/GoLeM/`, спрашивает Z.AI API ключ (сохраняет в `zai_api_key` с правами 0600), записывает `glm.toml` с `permission_mode`, создаёт `~/.claude/subagents/`, инжектит инструкции в `~/.claude/CLAUDE.md` между маркерами `<!-- GLM-SUBAGENT-START -->` и `<!-- GLM-SUBAGENT-END -->`, и для source-инсталлов ставит symlink в `~/.local/bin/glm`.
+
+Если у тебя уже был ключ в `~/.config/zai/env` (старый формат) — он мигрируется автоматически.
+
+Shell completions ставятся отдельно:
+
 - **Bash:** `~/.local/share/bash-completion/completions/glm`
 - **Fish:** `~/.config/fish/completions/glm.fish`
-- **Zsh:** `~/.config/zsh/completions/_glm` (add `fpath=(~/.config/zsh/completions $fpath)` to `.zshrc`)
+- **Zsh:** `~/.config/zsh/completions/_glm` (нужно добавить `fpath=(~/.config/zsh/completions $fpath)` в `.zshrc`)
 
-Restart your shell or open a new terminal to enable completions.
+Перезапусти шелл после установки.
 
-## Update
-
-```bash
-glm update
-```
-
-## Uninstall
+## обновление и удаление
 
 ```bash
-glm _uninstall
+glm update          # git pull + go build для source, go install для go-install
+glm _uninstall      # удаляет symlink, секцию в CLAUDE.md, спрашивает про ключи и job-артефакты
 ```
 
-## Usage
+## команды
+
+```
+glm session [flags] [claude flags]     # интерактивный claude code (syscall.Exec, заменяет процесс)
+glm run   [flags] "prompt"             # синхронно: создаёт job, запускает claude, печатает stdout, удаляет job dir
+glm start [flags] "prompt"             # асинхронно: то же, но в горутине, сразу печатает job ID
+glm chain [flags] "p1" "p2" ...        # последовательно: stdout шага N инжектится в промпт шага N+1
+glm status  JOB_ID                     # читает status файл
+glm result  JOB_ID                     # читает stdout.txt
+glm log     JOB_ID                     # читает changelog.txt
+glm list    [--status S] [--since D]   # перебирает job dirs с фильтрами
+glm clean   [--days N]                 # удаляет старые jobs
+glm kill    JOB_ID                     # SIGTERM → SIGKILL через секунду
+glm doctor                             # 6 проверок: claude CLI, API key, Z.AI reachability, models, slots, platform
+glm config  {show|set KEY VAL}         # show показывает все значения с источником, set пишет в glm.toml
+glm update                             # обновляет glm
+glm version                            # версия
+```
+
+Примеры:
 
 ```bash
-glm session                        # interactive Claude Code on GLM-5
-glm run "your prompt"              # sync, prints result
-glm start "prompt"                 # async, returns job ID
-glm status JOB_ID                  # check job status
-glm result JOB_ID                  # get text output
-glm log JOB_ID                     # show file changes
-glm list                           # all jobs
-glm clean --days 1                 # cleanup old jobs
-glm kill JOB_ID                    # terminate job
-glm chain "p1" "p2" "p3"          # chained execution (stdout → next prompt)
-glm doctor                         # system health check
-glm config show                    # show current config
-glm config set KEY VALUE           # change config value
+glm run -d ~/project "найди баги в auth.go"
+glm run -m glm-4 "отрефакторь auth"               # все три слота → glm-4
+glm run --opus glm-4.7 --haiku glm-4 "задача"     # per-slot модели
+glm session --sonnet glm-4                         # сессия с кастомным sonnet
+glm run --unsafe "deploy hotfix"                   # bypass permission checks
+glm start -t 600 "долгая задача"                   # async с таймаутом 10 минут
+glm list --status running
+glm list --status done,failed --since 2h
+glm list --json                                    # JSON для скриптинга
+glm chain "напиши тесты для auth.go" "запусти тесты и исправь ошибки"
+glm chain --continue-on-error "шаг1" "шаг2" "шаг3"
 ```
 
-**Examples:**
-```bash
-glm run -d ~/project "find bugs"              # set working directory
-glm run -m glm-4 "refactor auth"              # all slots → glm-4
-glm run --opus glm-4.7 --haiku glm-4 "task"  # per-slot models
-glm session --sonnet glm-4                    # session with custom sonnet
-glm run --unsafe "deploy hotfix"              # bypass permission checks
-glm list --status running                     # filter by status
-glm list --status done,failed --since 2h      # combine filters
-glm list --json                               # JSON output for scripting
-glm doctor --json                             # machine-readable health check
-```
+## флаги
 
-## Flags
+Работают с `session`, `run`, `start`, `chain`.
 
-Flags work with `session`, `run`, `start`, and `chain`.
-
-| Flag | Description |
+| Флаг | Что делает |
 |---|---|
-| `-m`, `--model MODEL` | Set **all three** model slots (opus, sonnet, haiku) to MODEL |
-| `--opus MODEL` | Set opus model only |
-| `--sonnet MODEL` | Set sonnet model only |
-| `--haiku MODEL` | Set haiku model only |
-| `-d DIR` | Working directory |
-| `-t SEC` | Timeout in seconds |
-| `--unsafe` | Bypass all permission checks |
-| `--mode MODE` | Permission mode: `bypassPermissions`, `acceptEdits`, `plan` |
-| `--json` | JSON output (works with list, status, result, log) |
+| `-m`, `--model MODEL` | Все три слота (opus, sonnet, haiku) → MODEL |
+| `--opus MODEL` | Только opus слот |
+| `--sonnet MODEL` | Только sonnet слот |
+| `--haiku MODEL` | Только haiku слот |
+| `-d DIR` | Рабочая директория |
+| `-t SEC` | Таймаут в секундах (для session игнорируется) |
+| `--unsafe` | bypassPermissions |
+| `--mode MODE` | Режим разрешений: `bypassPermissions`, `acceptEdits`, `default`, `plan` |
+| `--json` | JSON-вывод для list, status, result, log |
 
-Claude Code uses three model slots internally — heavy tasks get opus, standard tasks get sonnet, fast tasks get haiku. By default all three point to `glm-4.7`. Use `-m` to change them all at once, or `--opus`/`--sonnet`/`--haiku` to tune individually.
+Claude Code использует три слота внутри: тяжёлые задачи — opus, обычные — sonnet, быстрые — haiku. По умолчанию все три указывают на `glm-4.7`. `-m` меняет все сразу, `--opus`/`--sonnet`/`--haiku` — по отдельности.
 
-`session` also passes any extra flags directly to `claude` (e.g. `--resume`, `--verbose`).
+`session` пробрасывает неизвестные флаги напрямую в `claude` — например `--resume`, `--verbose`.
 
-## Config
+`chain` дополнительно принимает `--continue-on-error`: без него цепочка останавливается при первом неудачном шаге.
 
-`~/.config/GoLeM/glm.toml` — TOML config loaded on every `glm` invocation. Environment variables override file values.
+## конфигурация
+
+`~/.config/GoLeM/glm.toml` — читается при каждом запуске `glm`. Приоритет: флаг CLI > переменная окружения > glm.toml > hardcoded дефолт.
 
 ```bash
-glm config show                    # view all values with sources
-glm config set max_parallel 5      # change a value
-glm config set model glm-4         # set default model
+glm config show                   # все значения с пометками (default), (config), (env)
+glm config set max_parallel 5
+glm config set model glm-4
 ```
 
-| Key | Env override | Default | Description |
+| Ключ | Env | Дефолт | Описание |
 |---|---|---|---|
-| `model` | `GLM_MODEL` | `glm-4.7` | Default model for all three slots |
-| `opus_model` | `GLM_OPUS_MODEL` | (model) | Model for heavy tasks |
-| `sonnet_model` | `GLM_SONNET_MODEL` | (model) | Model for standard tasks |
-| `haiku_model` | `GLM_HAIKU_MODEL` | (model) | Model for fast tasks |
-| `permission_mode` | `GLM_PERMISSION_MODE` | `bypassPermissions` | Default permission mode |
-| `max_parallel` | `GLM_MAX_PARALLEL` | `3` | Max concurrent agents |
-| `debug` | `GLM_DEBUG` | `false` | Enable debug logging to stderr |
+| `model` | `GLM_MODEL` | `glm-4.7` | Дефолтная модель для всех трёх слотов |
+| `opus_model` | `GLM_OPUS_MODEL` | (model) | Модель для тяжёлых задач |
+| `sonnet_model` | `GLM_SONNET_MODEL` | (model) | Модель для обычных задач |
+| `haiku_model` | `GLM_HAIKU_MODEL` | (model) | Модель для быстрых задач |
+| `permission_mode` | `GLM_PERMISSION_MODE` | `bypassPermissions` | Дефолтный режим разрешений |
+| `max_parallel` | `GLM_MAX_PARALLEL` | `3` | Макс. параллельных агентов |
 
-**Priority:** flag (`-m`, `--opus`) > env var > config file > default.
-
-## Debug & logging
+Debug логгирование (`GLM_DEBUG=1`) читается напрямую из окружения, не из конфига:
 
 ```bash
-GLM_DEBUG=1 glm run "task"                    # debug messages to stderr
-GLM_DEBUG=1 GLM_LOG_FORMAT=json glm doctor    # structured JSON logs
-GLM_LOG_FILE=/tmp/glm.log glm run "task"      # additionally log to file
+GLM_DEBUG=1 glm run "задача"                  # debug в stderr
+GLM_DEBUG=1 GLM_LOG_FORMAT=json glm doctor    # структурированные JSON-логи
+GLM_LOG_FILE=/tmp/glm.log glm run "задача"    # дополнительно в файл
 ```
 
-Log levels: `[D]` debug, `[+]` info, `[!]` warn, `[x]` error. Colors on TTY, plain text when piped.
+Уровни логов: `[D]` debug, `[+]` info, `[!]` warn, `[x]` error. Цвета на TTY, plain text при пайпе.
 
-## How Claude Code uses it
+### мульти-провайдер
 
-After install, every Claude Code session auto-delegates work to `glm` agents in parallel. Each agent is a **full autonomous Claude Code instance** — it can read/edit files, run shell commands, use MCP servers, invoke skills, and run tests. The only difference: LLM calls go to GLM-5 via Z.AI instead of Anthropic.
+`glm.toml` поддерживает секции `[providers.NAME]` — можно подключить любой OpenAI-совместимый эндпойнт вместо Z.AI:
 
-Say **"delegate to glm"** and it fans out immediately. Your main session (Opus) stays on Anthropic API — Z.AI env vars are injected only into child processes.
+```toml
+default_provider = "custom"
 
-## Error codes
+[providers.custom]
+base_url = "https://custom.api.com/v1/anthropic"
+api_key_file = "~/.config/GoLeM/custom_key"
+timeout_ms = "5000"
+opus_model = "custom-opus"
+sonnet_model = "custom-sonnet"
+haiku_model = "custom-haiku"
+```
 
-| Code | Meaning |
-|---|---|
-| 0 | Success |
-| 1 | User error (bad args, invalid config) |
-| 3 | Not found (job doesn't exist) |
-| 124 | Timeout |
-| 127 | Dependency missing (claude CLI not found) |
+Если секций `[providers.*]` нет — используются hardcoded Z.AI defaults (`https://api.z.ai/api/anthropic`, `~/.config/GoLeM/zai_api_key`).
 
-Errors go to stderr in `err:<category> "message"` format for programmatic parsing.
+## как это работает
 
-## Files
+**session** — это `syscall.Exec`. `glm session` строит `argv` и окружение, потом полностью заменяет себя процессом `claude`. Job-директорий нет, вывод не захватывается. В окружение инжектируется: `ANTHROPIC_AUTH_TOKEN`, `ANTHROPIC_BASE_URL`, `API_TIMEOUT_MS`, и три слота моделей (`ANTHROPIC_DEFAULT_OPUS_MODEL` и т.д.).
 
-**Runtime files:**
+**run** — синхронный. Создаёт job dir под `~/.claude/subagents/<project-id>/<job-id>/`, пишет метаданные (prompt.txt, workdir.txt, model.txt и т.д.), запускает `claude -p --no-session-persistence --output-format json` с контекстом таймаута, захватывает stdout в `raw.json` и stderr в `stderr.txt`. После завершения парсит `raw.json` — извлекает `.result` в `stdout.txt` и генерирует `changelog.txt` из tool_use блоков. Потом печатает `stdout.txt` и удаляет job dir.
 
-| Path | Purpose |
-|---|---|
-| `~/.local/bin/glm` | Binary or symlink |
-| `~/.claude/CLAUDE.md` | Auto-delegation instructions (between markers) |
-| `~/.config/GoLeM/glm.toml` | Config — models, permissions, parallelism |
-| `~/.config/GoLeM/zai_api_key` | Z.AI API key (chmod 600) |
-| `~/.claude/subagents/<project>/job-*/` | Job artifacts — stdout, stderr, changelog, raw JSON |
+**start** — то же самое, но в горутине. Job ID печатается немедленно, процесс ждёт SIGINT/SIGTERM.
 
-**Source layout (Go):**
+**chain** — запускает шаги последовательно. Промпт шага N+1 получает результат шага N в формате `"Previous agent result:\n{stdout}\n\nYour task:\n{prompt}"`. Job dir каждого шага остаётся.
 
-| Path | Purpose |
-|---|---|
-| `cmd/glm/main.go` | Binary entry point — CLI dispatch, flag parsing, signal handling |
-| `internal/config/` | TOML config loading, env overrides, validation |
-| `internal/cmd/` | Command implementations (run, start, status, list, chain, etc.) |
-| `internal/job/` | Job lifecycle, status state machine, stale recovery |
-| `internal/slot/` | Concurrency control — flock/mkdir locking, PID liveness |
-| `internal/claude/` | Claude subprocess execution, JSON parsing, changelog |
-| `internal/log/` | Structured leveled logging (human + JSON formats) |
-| `internal/exitcode/` | Error taxonomy, exit code mapping |
+Project ID вычисляется из абсолютного пути рабочей директории: `{basename}-{crc32(path)}`. Так jobs одного проекта группируются, но не конфликтуют при одинаковых именах.
 
-## Platforms
+**audit** — каждый job пишет changelog из tool_use: Edit, Write, Bash (только delete-команды), NotebookEdit. Полная история tool calls — в `raw.json`.
 
-| Platform | Status |
-|---|---|
-| Linux (amd64, arm64) | Full |
-| macOS (amd64, arm64) | Full |
-| WSL | Full |
-
-## Audit
-
-Every job logs all file changes to `changelog.txt`:
 ```bash
-glm log job-20260226-...
+glm log job-20260226-143022-a1b2c3d4
 # EDIT src/auth.py: 142 chars
 # WRITE tests/test_auth.py
 # DELETE via bash: rm tmp/cache.db
 ```
 
-Full tool call history in `raw.json` per job for complete audit trail.
+Если агент упёрся в permission wall — статус становится `permission_error`, не просто `failed`.
 
-If an agent hits a permission wall, status becomes `permission_error` instead of generic `failed`.
-
-## Troubleshooting
+## тестирование
 
 ```bash
-glm doctor                         # run all health checks
-glm doctor --json                  # machine-readable output
+go test ./...                                     # unit тесты, без API-вызовов
+go test -tags e2e ./internal/e2e/... -v           # e2e с реальным claude и API ключом
 ```
 
-| Error | Fix |
+E2E тесты помечены `//go:build e2e` и требуют рабочий `claude` CLI и валидный ключ.
+
+## коды ошибок
+
+| Код | Смысл |
 |---|---|
-| `claude CLI not found` | Install Claude Code, add to PATH |
-| `credentials not found` | Run `glm _install` |
-| Empty output | Check `glm result JOB_ID` or `~/.claude/subagents/job-*/stderr.txt` |
-| `~/.local/bin` not in PATH | `export PATH="$HOME/.local/bin:$PATH"` |
-| Jobs stuck in queued | Check `glm doctor` slots, kill stale jobs with `glm clean --days 0` |
+| 0 | Успех |
+| 1 | User error (неправильные аргументы, невалидный конфиг) |
+| 3 | Not found (job не существует) |
+| 124 | Timeout |
+| 127 | Dependency missing (claude CLI не найден) |
+
+Ошибки пишутся в stderr в формате `err:<category> "message"` для программного разбора.
+
+## файлы
+
+**Runtime:**
+
+| Путь | Что |
+|---|---|
+| `~/.local/bin/glm` | Binary или symlink (для source-инсталлов) |
+| `~/.claude/CLAUDE.md` | Инструкции делегирования (между маркерами) |
+| `~/.config/GoLeM/glm.toml` | Конфиг: модели, разрешения, параллелизм |
+| `~/.config/GoLeM/zai_api_key` | Z.AI API ключ (chmod 600) |
+| `~/.config/GoLeM/config.json` | Метаданные установки (version, install_mode) |
+| `~/.claude/subagents/<project>/<job-id>/` | Job артефакты |
+
+Внутри job dir: `prompt.txt`, `workdir.txt`, `model.txt`, `permission_mode.txt`, `started_at.txt`, `finished_at.txt`, `raw.json`, `stdout.txt`, `stderr.txt`, `changelog.txt`, `status`, `pid.txt`, `exit_code.txt` (только при ошибке).
+
+**Исходники (Go):**
+
+| Путь | Что |
+|---|---|
+| `cmd/glm/main.go` | Точка входа, CLI dispatch, signal handling |
+| `internal/config/config.go` | Загрузка TOML, env overrides, валидация |
+| `internal/config/provider.go` | Мульти-провайдер: LoadProvider, ListProviders, ResolveModelEnv |
+| `internal/cmd/session.go` | SessionCmd: строит argv+env для syscall.Exec |
+| `internal/cmd/chain.go` | ChainCmd: последовательные шаги с инжекцией stdout |
+| `internal/cmd/flags.go` | ParseFlags, Validate |
+| `internal/cmd/doctor.go` | DoctorCmd: 6 диагностических проверок |
+| `internal/cmd/install.go` | InstallCmd, UninstallCmd, UpdateCmd, InjectClaudeMD |
+| `internal/claude/claude.go` | Execute: subprocess, env, захват вывода |
+| `internal/claude/parser.go` | ParseRawJSON, GenerateChangelog |
+| `internal/job/job.go` | Job lifecycle, status machine, FindJobDir |
+| `internal/slot/slot.go` | Concurrency control: flock/mkdir, PID liveness |
+| `internal/log/log.go` | Структурированный логгер (human + JSON) |
+| `internal/exitcode/exitcode.go` | Типизированные ошибки, коды выхода |
+| `internal/e2e/` | End-to-end тесты (//go:build e2e) |
+
+## платформы
+
+Linux (amd64, arm64), macOS (amd64, arm64), WSL.
+
+## troubleshooting
+
+```bash
+glm doctor          # claude_cli, api_key, zai_reachable, models, slots, platform
+```
+
+| Симптом | Фикс |
+|---|---|
+| `claude CLI not found` | Установи Claude Code, добавь в PATH |
+| `credentials not found` | Запусти `glm _install` |
+| Пустой вывод после run | Проверь `glm result JOB_ID` или `~/.claude/subagents/.../stderr.txt` |
+| `~/.local/bin` не в PATH | `export PATH="$HOME/.local/bin:$PATH"` в `.bashrc`/`.zshrc` |
+| Jobs зависают в queued | `glm doctor` — смотри slots, чисти стейл-джобы `glm clean --days 0` |
+| Статус `permission_error` | Добавь `--unsafe` или смени `permission_mode` на `bypassPermissions` |
