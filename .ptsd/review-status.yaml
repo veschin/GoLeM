@@ -1,7 +1,7 @@
 features:
   agent-chaining:
     stage: impl
-    tests: passing
+    tests: written
     review: passed
     issues: 0
   claude-execution:
@@ -16,12 +16,12 @@ features:
     issues: 0
   config-diagnostics:
     stage: impl
-    tests: passing
+    tests: written
     review: passed
     issues: 0
   config-management:
     stage: impl
-    tests: passing
+    tests: written
     review: passed
     issues: 0
   core-commands:
@@ -76,7 +76,7 @@ features:
     issues: 0
   session-command:
     stage: impl
-    tests: passing
+    tests: written
     review: passed
     issues: 0
   stale-recovery:
