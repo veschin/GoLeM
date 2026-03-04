@@ -205,9 +205,6 @@ func TestUseDefaultsWhenNoTOML(t *testing.T) {
 	if cfg.ZaiAPITimeoutMs != "3000000" {
 		t.Errorf("ZaiAPITimeoutMs: got %q, want %q", cfg.ZaiAPITimeoutMs, "3000000")
 	}
-	if cfg.Debug {
-		t.Errorf("Debug: got true, want false")
-	}
 }
 
 // ---- Scenario: Empty TOML file uses all defaults ----
@@ -496,23 +493,6 @@ func TestEnvMaxParallelOverride(t *testing.T) {
 	}
 }
 
-// ---- Scenario: GLM_DEBUG enables debug mode ----
-
-func TestEnvDebugMode(t *testing.T) {
-	configDir, subagentDir := setupDirs(t)
-	writeTOML(t, configDir, seedHappyPathTOML)
-	writeAPIKey(t, configDir, seedHappyPathAPIKey)
-	setenv(t, "GLM_DEBUG", "1")
-
-	cfg, err := Load(configDir, subagentDir)
-	if err != nil {
-		t.Fatalf("Load returned error: %v", err)
-	}
-	if !cfg.Debug {
-		t.Errorf("Debug: got false, want true")
-	}
-}
-
 // ---- Scenario: Validate empty API key ----
 
 func TestValidateEmptyAPIKey(t *testing.T) {
@@ -720,8 +700,6 @@ func TestConfigStructFields(t *testing.T) {
 	if cfg.ZaiAPITimeoutMs == "" {
 		t.Error("ZaiAPITimeoutMs should not be empty")
 	}
-	// Debug field exists and is accessible (no compile error).
-	_ = cfg.Debug
 }
 
 // ---- Scenario: Hardcoded constants are correct ----

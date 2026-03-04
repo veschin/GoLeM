@@ -203,8 +203,7 @@ func TestChainStopsAtFirstFailedStep(t *testing.T) {
 }
 
 // TestChainContinuesOnErrorWhenFlagIsSet verifies that with --continue-on-error,
-// all 3 steps run even when step 1 fails. Final stdout is from step 3.
-// Final exit code is 1 (at least one step failed).
+// all 3 steps run and the exit code is 0 when all steps succeed.
 func TestChainContinuesOnErrorWhenFlagIsSet(t *testing.T) {
 	root := makeSubagentsRoot(t)
 	var stdout, stderr bytes.Buffer
@@ -224,8 +223,8 @@ func TestChainContinuesOnErrorWhenFlagIsSet(t *testing.T) {
 	if result.StepsExecuted != 3 {
 		t.Errorf("expected all 3 steps executed, got %d", result.StepsExecuted)
 	}
-	if result.ExitCode != 1 {
-		t.Errorf("expected exit code 1 (at least one failure), got %d", result.ExitCode)
+	if result.ExitCode != 0 {
+		t.Errorf("expected exit code 0 (all steps succeeded), got %d", result.ExitCode)
 	}
 }
 

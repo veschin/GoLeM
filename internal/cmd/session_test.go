@@ -2,35 +2,39 @@ package cmd_test
 
 import (
 	"bytes"
-	"os"
-	"path/filepath"
 	"slices"
 	"strings"
 	"testing"
 
 	"github.com/veschin/GoLeM/internal/cmd"
+	"github.com/veschin/GoLeM/internal/config"
 )
 
 // ---------------------------------------------------------------------------
 // helpers
 // ---------------------------------------------------------------------------
 
-// newSessionConfig creates a minimal config directory with a Z.AI API key file
-// and returns its path. The key is "sk-zai-key" to match seed data.
-func newSessionConfig(t *testing.T) string {
+// newSessionConfig creates a minimal *config.Config with a Z.AI API key and
+// default values matching the config package constants.
+func newSessionConfig(t *testing.T) *config.Config {
 	t.Helper()
-	dir := t.TempDir()
-	if err := os.WriteFile(filepath.Join(dir, "zai_api_key"), []byte("sk-zai-key"), 0o600); err != nil {
-		t.Fatalf("write zai_api_key: %v", err)
+	return &config.Config{
+		ZaiAPIKey:       "sk-zai-key",
+		ZaiBaseURL:      config.ZaiBaseURL,
+		ZaiAPITimeoutMs: config.ZaiAPITimeoutMs,
+		OpusModel:       config.DefaultModel,
+		SonnetModel:     config.DefaultModel,
+		HaikuModel:      config.DefaultModel,
+		PermissionMode:  config.DefaultPermissionMode,
+		MaxParallel:     config.DefaultMaxParallel,
 	}
-	return dir
 }
 
 // runSession calls SessionCmd with the given args and returns the result.
-func runSession(t *testing.T, configDir string, args []string) *cmd.SessionResult {
+func runSession(t *testing.T, cfg *config.Config, args []string) *cmd.SessionResult {
 	t.Helper()
 	var dbg bytes.Buffer
-	res, err := cmd.SessionCmd(configDir, args, &dbg)
+	res, err := cmd.SessionCmd(cfg, args, &dbg)
 	if err != nil {
 		t.Fatalf("SessionCmd(%v): %v", args, err)
 	}
@@ -91,8 +95,8 @@ func assertArgAbsent(t *testing.T, argv []string, flag string) {
 // ---------------------------------------------------------------------------
 
 func TestLaunchDefaultInteractiveSession(t *testing.T) {
-	cfgDir := newSessionConfig(t)
-	res := runSession(t, cfgDir, nil)
+	cfg := newSessionConfig(t)
+	res := runSession(t, cfg, nil)
 
 	if len(res.Argv) == 0 || res.Argv[0] != "claude" {
 		t.Errorf("argv[0] = %q; want %q", res.Argv[0], "claude")
@@ -108,8 +112,8 @@ func TestLaunchDefaultInteractiveSession(t *testing.T) {
 // ---------------------------------------------------------------------------
 
 func TestGoleMFlagsAreParsedFromSessionArguments(t *testing.T) {
-	cfgDir := newSessionConfig(t)
-	res := runSession(t, cfgDir, []string{"-d", "/tmp/work", "--unsafe"})
+	cfg := newSessionConfig(t)
+	res := runSession(t, cfg, []string{"-d", "/tmp/work", "--unsafe"})
 
 	if res.WorkDir != "/tmp/work" {
 		t.Errorf("WorkDir = %q; want %q", res.WorkDir, "/tmp/work")
@@ -118,8 +122,8 @@ func TestGoleMFlagsAreParsedFromSessionArguments(t *testing.T) {
 }
 
 func TestUnknownFlagsPassThroughToClaudeCLI(t *testing.T) {
-	cfgDir := newSessionConfig(t)
-	res := runSession(t, cfgDir, []string{"--verbose", "--resume", "abc123"})
+	cfg := newSessionConfig(t)
+	res := runSession(t, cfg, []string{"--verbose", "--resume", "abc123"})
 
 	assertArgPresent(t, res.Argv, "--verbose")
 	assertArgPresent(t, res.Argv, "--resume")
@@ -127,8 +131,8 @@ func TestUnknownFlagsPassThroughToClaudeCLI(t *testing.T) {
 }
 
 func TestGoleMFlagsParsedFirstThenPassthroughFlags(t *testing.T) {
-	cfgDir := newSessionConfig(t)
-	res := runSession(t, cfgDir, []string{"--unsafe", "--verbose", "--resume", "session-id-123", "-d", "/tmp/work"})
+	cfg := newSessionConfig(t)
+	res := runSession(t, cfg, []string{"--unsafe", "--verbose", "--resume", "session-id-123", "-d", "/tmp/work"})
 
 	if res.WorkDir != "/tmp/work" {
 		t.Errorf("WorkDir = %q; want %q", res.WorkDir, "/tmp/work")
@@ -144,8 +148,8 @@ func TestGoleMFlagsParsedFirstThenPassthroughFlags(t *testing.T) {
 }
 
 func TestModelFlagSetsAllThreeModelSlots(t *testing.T) {
-	cfgDir := newSessionConfig(t)
-	res := runSession(t, cfgDir, []string{"-m", "glm-4.5"})
+	cfg := newSessionConfig(t)
+	res := runSession(t, cfg, []string{"-m", "glm-4.5"})
 
 	assertEnvPresent(t, res.Env, "ANTHROPIC_DEFAULT_OPUS_MODEL", "glm-4.5")
 	assertEnvPresent(t, res.Env, "ANTHROPIC_DEFAULT_SONNET_MODEL", "glm-4.5")
@@ -153,8 +157,8 @@ func TestModelFlagSetsAllThreeModelSlots(t *testing.T) {
 }
 
 func TestIndividualModelSlotOverrides(t *testing.T) {
-	cfgDir := newSessionConfig(t)
-	res := runSession(t, cfgDir, []string{"--opus", "glm-opus-1", "--sonnet", "glm-sonnet-1", "--haiku", "glm-haiku-1"})
+	cfg := newSessionConfig(t)
+	res := runSession(t, cfg, []string{"--opus", "glm-opus-1", "--sonnet", "glm-sonnet-1", "--haiku", "glm-haiku-1"})
 
 	assertEnvPresent(t, res.Env, "ANTHROPIC_DEFAULT_OPUS_MODEL", "glm-opus-1")
 	assertEnvPresent(t, res.Env, "ANTHROPIC_DEFAULT_SONNET_MODEL", "glm-sonnet-1")
@@ -162,8 +166,8 @@ func TestIndividualModelSlotOverrides(t *testing.T) {
 }
 
 func TestPermissionModeFlagMode(t *testing.T) {
-	cfgDir := newSessionConfig(t)
-	res := runSession(t, cfgDir, []string{"--mode", "acceptEdits"})
+	cfg := newSessionConfig(t)
+	res := runSession(t, cfg, []string{"--mode", "acceptEdits"})
 
 	// Should include --permission-mode acceptEdits
 	found := false
@@ -185,8 +189,8 @@ func TestPermissionModeFlagMode(t *testing.T) {
 // ---------------------------------------------------------------------------
 
 func TestZAIEnvironmentVariablesAreSetForSession(t *testing.T) {
-	cfgDir := newSessionConfig(t)
-	res := runSession(t, cfgDir, nil)
+	cfg := newSessionConfig(t)
+	res := runSession(t, cfg, nil)
 
 	assertEnvPresent(t, res.Env, "ANTHROPIC_AUTH_TOKEN", "sk-zai-key")
 	assertEnvPresent(t, res.Env, "ANTHROPIC_BASE_URL", "https://api.z.ai/api/anthropic")
@@ -204,8 +208,8 @@ func TestClaudeCodeInternalVariablesAreUnset(t *testing.T) {
 	t.Setenv("CLAUDECODE", "1")
 	t.Setenv("CLAUDE_CODE_ENTRYPOINT", "cli")
 
-	cfgDir := newSessionConfig(t)
-	res := runSession(t, cfgDir, nil)
+	cfg := newSessionConfig(t)
+	res := runSession(t, cfg, nil)
 
 	assertEnvAbsent(t, res.Env, "CLAUDECODE")
 	assertEnvAbsent(t, res.Env, "CLAUDE_CODE_ENTRYPOINT")
@@ -216,8 +220,8 @@ func TestClaudeCodeInternalVariablesAreUnset(t *testing.T) {
 // ---------------------------------------------------------------------------
 
 func TestSessionDoesNotUseExecutionModeFlags(t *testing.T) {
-	cfgDir := newSessionConfig(t)
-	res := runSession(t, cfgDir, nil)
+	cfg := newSessionConfig(t)
+	res := runSession(t, cfg, nil)
 
 	assertArgAbsent(t, res.Argv, "-p")
 	assertArgAbsent(t, res.Argv, "--output-format")
@@ -233,8 +237,8 @@ func TestSessionDoesNotUseExecutionModeFlags(t *testing.T) {
 // the test verifies the function itself does not error.
 
 func TestExitCodeZeroPassthrough(t *testing.T) {
-	cfgDir := newSessionConfig(t)
-	_, err := cmd.SessionCmd(cfgDir, nil, nil)
+	cfg := newSessionConfig(t)
+	_, err := cmd.SessionCmd(cfg, nil, nil)
 	if err != nil {
 		t.Errorf("SessionCmd returned error for zero-exit scenario: %v", err)
 	}
@@ -244,8 +248,8 @@ func TestNonZeroExitCodePassthrough(t *testing.T) {
 	// SessionCmd must not intercept exit codes — the caller exec's claude
 	// and the OS handles the code. We only verify no error is returned by
 	// SessionCmd itself.
-	cfgDir := newSessionConfig(t)
-	_, err := cmd.SessionCmd(cfgDir, nil, nil)
+	cfg := newSessionConfig(t)
+	_, err := cmd.SessionCmd(cfg, nil, nil)
 	if err != nil {
 		t.Errorf("SessionCmd returned error: %v", err)
 	}
@@ -256,8 +260,8 @@ func TestNonZeroExitCodePassthrough(t *testing.T) {
 // ---------------------------------------------------------------------------
 
 func TestNoFlagsProvidedLaunchesWithAllDefaults(t *testing.T) {
-	cfgDir := newSessionConfig(t)
-	res := runSession(t, cfgDir, nil)
+	cfg := newSessionConfig(t)
+	res := runSession(t, cfg, nil)
 
 	assertEnvPresent(t, res.Env, "ANTHROPIC_DEFAULT_OPUS_MODEL", "glm-4.7")
 	assertEnvPresent(t, res.Env, "ANTHROPIC_DEFAULT_SONNET_MODEL", "glm-4.7")
@@ -270,9 +274,9 @@ func TestNoFlagsProvidedLaunchesWithAllDefaults(t *testing.T) {
 }
 
 func TestTimeoutFlagIsIgnoredForSessionMode(t *testing.T) {
-	cfgDir := newSessionConfig(t)
+	cfg := newSessionConfig(t)
 	var dbg bytes.Buffer
-	res, err := cmd.SessionCmd(cfgDir, []string{"-t", "300", "-d", "/home/veschin/work/project"}, &dbg)
+	res, err := cmd.SessionCmd(cfg, []string{"-t", "300", "-d", "/home/veschin/work/project"}, &dbg)
 	if err != nil {
 		t.Fatalf("SessionCmd: %v", err)
 	}
@@ -285,11 +289,51 @@ func TestTimeoutFlagIsIgnoredForSessionMode(t *testing.T) {
 }
 
 func TestWorkingDirectoryFlagChangesDirectoryBeforeExec(t *testing.T) {
-	cfgDir := newSessionConfig(t)
+	cfg := newSessionConfig(t)
 	dir := t.TempDir()
-	res := runSession(t, cfgDir, []string{"-d", dir})
+	res := runSession(t, cfg, []string{"-d", dir})
 
 	if res.WorkDir != dir {
 		t.Errorf("WorkDir = %q; want %q", res.WorkDir, dir)
 	}
+}
+
+// ---------------------------------------------------------------------------
+// Config-based model defaults
+// ---------------------------------------------------------------------------
+
+func TestSessionUsesConfigModelDefaults(t *testing.T) {
+	cfg := newSessionConfig(t)
+	cfg.OpusModel = "custom-opus"
+	cfg.SonnetModel = "custom-sonnet"
+	cfg.HaikuModel = "custom-haiku"
+	res := runSession(t, cfg, nil)
+	assertEnvPresent(t, res.Env, "ANTHROPIC_DEFAULT_OPUS_MODEL", "custom-opus")
+	assertEnvPresent(t, res.Env, "ANTHROPIC_DEFAULT_SONNET_MODEL", "custom-sonnet")
+	assertEnvPresent(t, res.Env, "ANTHROPIC_DEFAULT_HAIKU_MODEL", "custom-haiku")
+}
+
+func TestSessionCLIOverridesConfig(t *testing.T) {
+	cfg := newSessionConfig(t)
+	cfg.OpusModel = "config-opus"
+	cfg.SonnetModel = "config-sonnet"
+	cfg.HaikuModel = "config-haiku"
+	res := runSession(t, cfg, []string{"-m", "cli-model"})
+	assertEnvPresent(t, res.Env, "ANTHROPIC_DEFAULT_OPUS_MODEL", "cli-model")
+	assertEnvPresent(t, res.Env, "ANTHROPIC_DEFAULT_SONNET_MODEL", "cli-model")
+	assertEnvPresent(t, res.Env, "ANTHROPIC_DEFAULT_HAIKU_MODEL", "cli-model")
+}
+
+func TestLongModelFlagWorks(t *testing.T) {
+	cfg := newSessionConfig(t)
+	res := runSession(t, cfg, []string{"--model", "test-model"})
+	assertEnvPresent(t, res.Env, "ANTHROPIC_DEFAULT_OPUS_MODEL", "test-model")
+	assertEnvPresent(t, res.Env, "ANTHROPIC_DEFAULT_SONNET_MODEL", "test-model")
+	assertEnvPresent(t, res.Env, "ANTHROPIC_DEFAULT_HAIKU_MODEL", "test-model")
+}
+
+func TestSessionSetsAPITimeoutMS(t *testing.T) {
+	cfg := newSessionConfig(t)
+	res := runSession(t, cfg, nil)
+	assertEnvPresent(t, res.Env, "API_TIMEOUT_MS", config.ZaiAPITimeoutMs)
 }
