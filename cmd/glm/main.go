@@ -236,10 +236,7 @@ func cmdRun(args []string) int {
 
 	// Apply config defaults.
 	if flags.Timeout <= 0 {
-		flags.Timeout = cfg.MaxParallel // Use config default timeout
-		if flags.Timeout <= 0 {
-			flags.Timeout = config.DefaultTimeout
-		}
+		flags.Timeout = config.DefaultTimeout
 	}
 
 	if err := cmd.Validate(flags); err != nil {
@@ -613,7 +610,7 @@ func cmdChain(args []string) int {
 // Flags (-d, -t, -m, etc.) and their values are skipped.
 func extractPrompts(args []string) []string {
 	flagsWithValue := map[string]bool{
-		"-d": true, "-t": true, "-m": true,
+		"-d": true, "-t": true, "-m": true, "--model": true,
 		"--opus": true, "--sonnet": true, "--haiku": true, "--mode": true,
 	}
 
@@ -636,11 +633,10 @@ func extractPrompts(args []string) []string {
 }
 
 func cmdSession(args []string) int {
-	home, err := os.UserHomeDir()
+	cfg, err := loadConfig()
 	if err != nil {
 		return die(err)
 	}
-	configDir := filepath.Join(home, ".config", "GoLeM")
 
 	var debugLog *log.Logger
 	if os.Getenv("GLM_DEBUG") == "1" {
@@ -652,7 +648,7 @@ func cmdSession(args []string) int {
 		debugWriter = os.Stderr
 	}
 
-	result, err := cmd.SessionCmd(configDir, args, debugWriter)
+	result, err := cmd.SessionCmd(cfg, args, debugWriter)
 	if err != nil {
 		return die(err)
 	}

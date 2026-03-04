@@ -5,13 +5,14 @@ import (
 	"fmt"
 	"io"
 	"os"
-	"path/filepath"
 	"strings"
+
+	"github.com/veschin/GoLeM/internal/config"
 )
 
 // SessionArgs holds the parsed arguments for the session command.
 type SessionArgs struct {
-	// Model is the base model flag (-m). When set, it overrides all three
+	// Model is the base model flag (-m/--model). When set, it overrides all three
 	// Anthropic model slots (opus, sonnet, haiku).
 	Model string
 	// OpusModel is the --opus flag.
@@ -29,9 +30,6 @@ type SessionArgs struct {
 	// Passthrough contains all flags and positional arguments not consumed by
 	// GoLeM. They are forwarded verbatim to the claude binary.
 	Passthrough []string
-	// TimeoutIgnored is set to true when the -t flag was present; the value is
-	// discarded and a debug message is emitted.
-	TimeoutIgnored bool
 }
 
 // SessionResult captures the parameters that SessionCmd would pass to
@@ -47,28 +45,15 @@ type SessionResult struct {
 	DebugMessages []string
 }
 
-// zaiBaseURL is the Z.AI API endpoint.
-const zaiBaseURL = "https://api.z.ai/api/anthropic"
-
-// defaultGLMModel is the default model for all slots.
-const defaultGLMModel = "glm-4.7"
-
 // SessionCmd parses args, builds the environment, and populates a
 // SessionResult describing what would be exec'd. The actual exec is
 // performed by the caller (main). Using a returned value rather than
 // calling syscall.Exec directly keeps the function testable.
 //
-// configDir is the GoLeM config directory (contains zai_api_key, glm.toml).
+// cfg is the loaded GoLeM configuration (API key, models, base URL, timeout).
 // args are the raw CLI arguments after the "session" sub-command token.
 // debugLog receives debug messages; may be nil.
-func SessionCmd(configDir string, args []string, debugLog io.Writer) (*SessionResult, error) {
-	// Read API key from configDir/zai_api_key.
-	apiKey := ""
-	keyPath := filepath.Join(configDir, "zai_api_key")
-	if data, err := os.ReadFile(keyPath); err == nil {
-		apiKey = strings.TrimSpace(string(data))
-	}
-
+func SessionCmd(cfg *config.Config, args []string, debugLog io.Writer) (*SessionResult, error) {
 	// Parse GoLeM-specific flags from args.
 	sa := &SessionArgs{}
 	var passthroughArgs []string
@@ -86,11 +71,10 @@ func SessionCmd(configDir string, args []string, debugLog io.Writer) (*SessionRe
 			if i+1 < len(args) {
 				i++ // consume the value
 			}
-			sa.TimeoutIgnored = true
 			if debugLog != nil {
 				fmt.Fprintln(debugLog, "Timeout flag ignored for session mode")
 			}
-		case arg == "-m":
+		case arg == "-m" || arg == "--model":
 			if i+1 < len(args) {
 				sa.Model = args[i+1]
 				i++
@@ -124,31 +108,33 @@ func SessionCmd(configDir string, args []string, debugLog io.Writer) (*SessionRe
 	}
 	sa.Passthrough = passthroughArgs
 
-	// Determine model slots.
-	opusModel := sa.OpusModel
-	sonnetModel := sa.SonnetModel
-	haikuModel := sa.HaikuModel
+	// Determine model slots — start from config defaults.
+	opusModel := cfg.OpusModel
+	sonnetModel := cfg.SonnetModel
+	haikuModel := cfg.HaikuModel
+
+	// Per-slot CLI flags override config.
+	if sa.OpusModel != "" {
+		opusModel = sa.OpusModel
+	}
+	if sa.SonnetModel != "" {
+		sonnetModel = sa.SonnetModel
+	}
+	if sa.HaikuModel != "" {
+		haikuModel = sa.HaikuModel
+	}
+
+	// -m/--model overrides all three slots (unless a per-slot flag was given).
 	if sa.Model != "" {
-		// -m overrides all three slots.
-		if opusModel == "" {
+		if sa.OpusModel == "" {
 			opusModel = sa.Model
 		}
-		if sonnetModel == "" {
+		if sa.SonnetModel == "" {
 			sonnetModel = sa.Model
 		}
-		if haikuModel == "" {
+		if sa.HaikuModel == "" {
 			haikuModel = sa.Model
 		}
-	}
-	// Apply defaults.
-	if opusModel == "" {
-		opusModel = defaultGLMModel
-	}
-	if sonnetModel == "" {
-		sonnetModel = defaultGLMModel
-	}
-	if haikuModel == "" {
-		haikuModel = defaultGLMModel
 	}
 
 	// Build environment (filtered copy of os.Environ with blocked vars removed).
@@ -166,11 +152,12 @@ func SessionCmd(configDir string, args []string, debugLog io.Writer) (*SessionRe
 	}
 	// Inject ZAI-specific env vars.
 	env = append(env,
-		"ANTHROPIC_AUTH_TOKEN="+apiKey,
-		"ANTHROPIC_BASE_URL="+zaiBaseURL,
+		"ANTHROPIC_AUTH_TOKEN="+cfg.ZaiAPIKey,
+		"ANTHROPIC_BASE_URL="+cfg.ZaiBaseURL,
 		"ANTHROPIC_DEFAULT_OPUS_MODEL="+opusModel,
 		"ANTHROPIC_DEFAULT_SONNET_MODEL="+sonnetModel,
 		"ANTHROPIC_DEFAULT_HAIKU_MODEL="+haikuModel,
+		"API_TIMEOUT_MS="+cfg.ZaiAPITimeoutMs,
 	)
 
 	// Build argv for claude (interactive session — no -p, --output-format, etc.).

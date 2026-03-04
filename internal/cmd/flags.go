@@ -52,7 +52,7 @@ func ParseFlags(args []string) (*Flags, error) {
 			f.Timeout = timeout
 			i++
 
-		case arg == "-m":
+		case arg == "-m" || arg == "--model":
 			if i+1 >= len(args) {
 				return nil, fmt.Errorf(`err:user "Missing value for -m flag"`)
 			}

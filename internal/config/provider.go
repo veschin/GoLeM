@@ -148,7 +148,7 @@ func ParseProviderConfig(data []byte) (*ProviderConfig, error) {
 		if strings.HasPrefix(line, "default_provider") {
 			parts := strings.SplitN(line, "=", 2)
 			if len(parts) == 2 {
-				val := strings.TrimSpace(strings.Trim(parts[1], `"'`))
+				val := strings.Trim(strings.TrimSpace(parts[1]), `"'`)
 				pc.DefaultProvider = val
 			}
 			continue
@@ -194,7 +194,7 @@ func ParseProviderConfig(data []byte) (*ProviderConfig, error) {
 			parts := strings.SplitN(line, "=", 2)
 			if len(parts) == 2 {
 				key := strings.TrimSpace(parts[0])
-				value := strings.TrimSpace(strings.Trim(parts[1], `"'`))
+				value := strings.Trim(strings.TrimSpace(parts[1]), `"'`)
 
 				switch key {
 				case "base_url":

@@ -148,7 +148,7 @@ func ChainCmd(cf *ChainFlags, subagentsRoot, projectID string, stdout, stderr io
 	}
 
 	// Determine final exit code.
-	if anyFailed || cf.ContinueOnError {
+	if anyFailed {
 		result.ExitCode = 1
 	}
 

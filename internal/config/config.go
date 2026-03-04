@@ -233,7 +233,8 @@ func applyEnvOverrides(cfg *Config) {
 		}
 	}
 	if v := getenv("GLM_DEBUG"); v != "" {
-		cfg.Debug = v == "1" || strings.ToLower(v) == "true"
+		lower := strings.ToLower(v)
+		cfg.Debug = lower == "true" || lower == "1"
 	}
 }
 
