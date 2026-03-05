@@ -170,8 +170,8 @@ func TestLoadHappyPath(t *testing.T) {
 	if cfg.PermissionMode != "acceptEdits" {
 		t.Errorf("PermissionMode: got %q, want %q", cfg.PermissionMode, "acceptEdits")
 	}
-	if cfg.MaxParallel != 5 {
-		t.Errorf("MaxParallel: got %d, want 5", cfg.MaxParallel)
+	if cfg.APIRPS != 5 {
+		t.Errorf("MaxParallel: got %d, want 5", cfg.APIRPS)
 	}
 	if cfg.ZaiAPIKey != "sk-zai-a1b2c3d4e5f6g7h8i9j0k1l2m3n4o5p6q7r8s9t0" {
 		t.Errorf("ZaiAPIKey: got %q, want sk-zai-a1b2c3d4e5f6g7h8i9j0k1l2m3n4o5p6q7r8s9t0", cfg.ZaiAPIKey)
@@ -196,8 +196,8 @@ func TestUseDefaultsWhenNoTOML(t *testing.T) {
 	if cfg.PermissionMode != "bypassPermissions" {
 		t.Errorf("PermissionMode: got %q, want %q", cfg.PermissionMode, "bypassPermissions")
 	}
-	if cfg.MaxParallel != 3 {
-		t.Errorf("MaxParallel: got %d, want 3", cfg.MaxParallel)
+	if cfg.APIRPS != 3 {
+		t.Errorf("MaxParallel: got %d, want 3", cfg.APIRPS)
 	}
 	if cfg.ZaiBaseURL != "https://api.z.ai/api/anthropic" {
 		t.Errorf("ZaiBaseURL: got %q, want %q", cfg.ZaiBaseURL, "https://api.z.ai/api/anthropic")
@@ -225,8 +225,8 @@ func TestEmptyTOMLUsesDefaults(t *testing.T) {
 	if cfg.PermissionMode != "bypassPermissions" {
 		t.Errorf("PermissionMode: got %q, want %q", cfg.PermissionMode, "bypassPermissions")
 	}
-	if cfg.MaxParallel != 3 {
-		t.Errorf("MaxParallel: got %d, want 3", cfg.MaxParallel)
+	if cfg.APIRPS != 3 {
+		t.Errorf("MaxParallel: got %d, want 3", cfg.APIRPS)
 	}
 }
 
@@ -488,8 +488,8 @@ func TestEnvMaxParallelOverride(t *testing.T) {
 	if err != nil {
 		t.Fatalf("Load returned error: %v", err)
 	}
-	if cfg.MaxParallel != 10 {
-		t.Errorf("MaxParallel: got %d, want 10", cfg.MaxParallel)
+	if cfg.APIRPS != 10 {
+		t.Errorf("MaxParallel: got %d, want 10", cfg.APIRPS)
 	}
 }
 
@@ -682,8 +682,8 @@ func TestConfigStructFields(t *testing.T) {
 	if cfg.PermissionMode != "bypassPermissions" {
 		t.Errorf("PermissionMode: got %q, want %q", cfg.PermissionMode, "bypassPermissions")
 	}
-	if cfg.MaxParallel != 2 {
-		t.Errorf("MaxParallel: got %d, want 2", cfg.MaxParallel)
+	if cfg.APIRPS != 2 {
+		t.Errorf("MaxParallel: got %d, want 2", cfg.APIRPS)
 	}
 	if cfg.SubagentDir == "" {
 		t.Error("SubagentDir should not be empty")
@@ -722,8 +722,8 @@ func TestHardcodedConstants(t *testing.T) {
 	if DefaultTimeout != 3000 {
 		t.Errorf("DefaultTimeout constant: got %d, want 3000", DefaultTimeout)
 	}
-	if DefaultMaxParallel != 3 {
-		t.Errorf("DefaultMaxParallel constant: got %d, want 3", DefaultMaxParallel)
+	if DefaultAPIRPS != 3 {
+		t.Errorf("DefaultAPIRPS constant: got %d, want 3", DefaultAPIRPS)
 	}
 	if DefaultModel != "glm-5" {
 		t.Errorf("DefaultModel constant: got %q, want %q", DefaultModel, "glm-5")
@@ -760,8 +760,8 @@ func TestZeroMaxParallelUnlimited(t *testing.T) {
 	if err != nil {
 		t.Fatalf("Load returned error: %v", err)
 	}
-	if cfg.MaxParallel != 0 {
-		t.Errorf("MaxParallel: got %d, want 0 (unlimited)", cfg.MaxParallel)
+	if cfg.APIRPS != 0 {
+		t.Errorf("MaxParallel: got %d, want 0 (unlimited)", cfg.APIRPS)
 	}
 }
 

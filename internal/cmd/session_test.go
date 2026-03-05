@@ -26,7 +26,7 @@ func newSessionConfig(t *testing.T) *config.Config {
 		SonnetModel:     config.DefaultModel,
 		HaikuModel:      config.DefaultModel,
 		PermissionMode:  config.DefaultPermissionMode,
-		MaxParallel:     config.DefaultMaxParallel,
+		APIRPS:          config.DefaultAPIRPS,
 	}
 }
 

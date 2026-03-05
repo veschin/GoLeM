@@ -92,7 +92,7 @@ func TestE2EConfigLoadAndDoctor(t *testing.T) {
 		ZAIEndpoint:      config.ZaiBaseURL,
 		HTTPTimeout:      5 * time.Second,
 		SubagentsRoot:    cfg.SubagentDir,
-		MaxParallel:      cfg.MaxParallel,
+		APIRPS:           cfg.APIRPS,
 		OpusModel:        cfg.OpusModel,
 		SonnetModel:      cfg.SonnetModel,
 		HaikuModel:       cfg.HaikuModel,

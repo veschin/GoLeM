@@ -103,7 +103,7 @@ func findDeadPID(t *testing.T) int {
 // LockPath return the correct filenames relative to the subagent directory.
 func TestCounterAndLockFilesAreAtExpectedPaths(t *testing.T) {
 	dir := t.TempDir()
-	sm := NewSlotManager(dir, DefaultMaxParallel)
+	sm := NewSlotManager(dir, DefaultAPIRPS)
 
 	wantCounter := filepath.Join(dir, ".running_count")
 	wantLock := filepath.Join(dir, ".counter.lock")
@@ -123,7 +123,7 @@ func TestCounterAndLockFilesAreAtExpectedPaths(t *testing.T) {
 // TestClaimSlotIncrementsCounterFromZero verifies seed counter_file_zero.txt
 // (value 0) becomes 1 after ClaimSlot.
 func TestClaimSlotIncrementsCounterFromZero(t *testing.T) {
-	sm, dir := newSMWithCounter(t, DefaultMaxParallel, 0)
+	sm, dir := newSMWithCounter(t, DefaultAPIRPS, 0)
 
 	if err := sm.ClaimSlot(); err != nil {
 		t.Fatalf("ClaimSlot() error: %v", err)
@@ -138,7 +138,7 @@ func TestClaimSlotIncrementsCounterFromZero(t *testing.T) {
 // TestClaimSlotIncrementUnderExclusiveLock verifies that ClaimSlot creates the
 // lock file (proof that flock-based locking occurred) and increments correctly.
 func TestClaimSlotIncrementUnderExclusiveLock(t *testing.T) {
-	sm, dir := newSMWithCounter(t, DefaultMaxParallel, 0)
+	sm, dir := newSMWithCounter(t, DefaultAPIRPS, 0)
 
 	if err := sm.ClaimSlot(); err != nil {
 		t.Fatalf("ClaimSlot() error: %v", err)
@@ -177,7 +177,7 @@ func TestClaimSlotIncrementsCounterFromExistingValue(t *testing.T) {
 // TestReleaseSlotDecrementsCounter verifies seed counter_file_valid.txt
 // (value 3) becomes 2 after ReleaseSlot, performed under exclusive lock.
 func TestReleaseSlotDecrementsCounter(t *testing.T) {
-	sm, dir := newSMWithCounter(t, DefaultMaxParallel, 3)
+	sm, dir := newSMWithCounter(t, DefaultAPIRPS, 3)
 
 	if err := sm.ReleaseSlot(); err != nil {
 		t.Fatalf("ReleaseSlot() error: %v", err)
@@ -197,7 +197,7 @@ func TestReleaseSlotDecrementsCounter(t *testing.T) {
 // TestReleaseSlotNeverGoesBelowZero verifies seed counter_file_zero.txt
 // (value 0) stays at 0 after ReleaseSlot.
 func TestReleaseSlotNeverGoesBelowZero(t *testing.T) {
-	sm, dir := newSMWithCounter(t, DefaultMaxParallel, 0)
+	sm, dir := newSMWithCounter(t, DefaultAPIRPS, 0)
 
 	if err := sm.ReleaseSlot(); err != nil {
 		t.Fatalf("ReleaseSlot() error: %v", err)
@@ -212,7 +212,7 @@ func TestReleaseSlotNeverGoesBelowZero(t *testing.T) {
 // TestCounterClampedToZeroOnDoubleRelease verifies seed counter_file_negative.txt
 // (value -2) becomes 0 after ReleaseSlot.
 func TestCounterClampedToZeroOnDoubleRelease(t *testing.T) {
-	sm, dir := newSMWithCounter(t, DefaultMaxParallel, -2)
+	sm, dir := newSMWithCounter(t, DefaultAPIRPS, -2)
 
 	if err := sm.ReleaseSlot(); err != nil {
 		t.Fatalf("ReleaseSlot() error: %v", err)
@@ -370,7 +370,7 @@ func TestFallbackToMkdirLockingWhenFlockUnavailable(t *testing.T) {
 
 	// Force fallback mode; ClaimSlot must still work.
 	t.Setenv("LOCK_FALLBACK", "true")
-	sm := NewSlotManager(dir, DefaultMaxParallel)
+	sm := NewSlotManager(dir, DefaultAPIRPS)
 	writeCounterFile(t, dir, "0")
 
 	if err := sm.ClaimSlot(); err != nil {
@@ -391,7 +391,7 @@ func TestFallbackToMkdirLockingWhenFlockUnavailable(t *testing.T) {
 // scenario: 3 running jobs (2 alive, 1 dead), 1 queued.
 // Expected: dead job → failed, counter → 2, alive/queued jobs unchanged.
 func TestReconcileDetectsDeadRunningJobsAndResetsCounter(t *testing.T) {
-	sm, dir := newSMWithCounter(t, DefaultMaxParallel, 3)
+	sm, dir := newSMWithCounter(t, DefaultAPIRPS, 3)
 
 	alivePID1 := os.Getpid() // current test process — definitely alive
 	alivePID2 := 1           // PID 1 (init) is always alive on Linux
@@ -462,7 +462,7 @@ func TestReconcileDetectsDeadRunningJobsAndResetsCounter(t *testing.T) {
 // TestReconciliationRunsOnceAtStartup verifies that Reconcile is idempotent
 // when called with no running jobs, and that a second call does not corrupt state.
 func TestReconciliationRunsOnceAtStartup(t *testing.T) {
-	sm, dir := newSMWithCounter(t, DefaultMaxParallel, 0)
+	sm, dir := newSMWithCounter(t, DefaultAPIRPS, 0)
 
 	// First call: no jobs, counter stays 0.
 	if err := sm.Reconcile([]*Job{}); err != nil {
@@ -549,14 +549,14 @@ func TestProcessGroupTerminationPreventsOrphanClaudeProcesses(t *testing.T) {
 }
 
 // ---------------------------------------------------------------------------
-// AC8: max_parallel respects Z.AI rate limits
+// AC8: api_rps respects Z.AI rate limits
 // ---------------------------------------------------------------------------
 
-// TestDefaultMaxParallelMatchesZAILimits verifies that DefaultMaxParallel == 3,
+// TestDefaultAPIRPSMatchesZAILimits verifies that DefaultAPIRPS == 3,
 // matching the typical Z.AI coding plan concurrency limit.
-func TestDefaultMaxParallelMatchesZAILimits(t *testing.T) {
-	if DefaultMaxParallel != 3 {
-		t.Errorf("DefaultMaxParallel = %d, want 3 (matches Z.AI coding plan concurrency limit)", DefaultMaxParallel)
+func TestDefaultAPIRPSMatchesZAILimits(t *testing.T) {
+	if DefaultAPIRPS != 3 {
+		t.Errorf("DefaultAPIRPS = %d, want 3 (matches Z.AI coding plan concurrency limit)", DefaultAPIRPS)
 	}
 }
 
@@ -567,7 +567,7 @@ func TestDefaultMaxParallelMatchesZAILimits(t *testing.T) {
 // TestCounterFileDoesNotExistAtStartup verifies that Init creates the counter
 // file with value 0 when it does not exist.
 func TestCounterFileDoesNotExistAtStartup(t *testing.T) {
-	sm, dir := newSM(t, DefaultMaxParallel)
+	sm, dir := newSM(t, DefaultAPIRPS)
 
 	// Ensure counter file is absent.
 	_ = os.Remove(filepath.Join(dir, CounterFile))
@@ -585,7 +585,7 @@ func TestCounterFileDoesNotExistAtStartup(t *testing.T) {
 // TestCounterFileContainsNonIntegerValue verifies that Init resets a counter
 // file containing "abc" (seed counter_file_invalid.txt) to 0.
 func TestCounterFileContainsNonIntegerValue(t *testing.T) {
-	sm, dir := newSM(t, DefaultMaxParallel)
+	sm, dir := newSM(t, DefaultAPIRPS)
 	writeCounterFile(t, dir, "abc")
 
 	if err := sm.Init(); err != nil {
@@ -601,7 +601,7 @@ func TestCounterFileContainsNonIntegerValue(t *testing.T) {
 // TestStaleLockFileFromDeadProcessHandledByFlock verifies that a lock file
 // left by a dead process does not prevent a new flock acquisition.
 func TestStaleLockFileFromDeadProcessHandledByFlock(t *testing.T) {
-	sm, dir := newSMWithCounter(t, DefaultMaxParallel, 0)
+	sm, dir := newSMWithCounter(t, DefaultAPIRPS, 0)
 
 	// Create a stale lock file.
 	if err := os.WriteFile(sm.LockPath(), []byte("stale"), 0o644); err != nil {
@@ -643,7 +643,7 @@ func TestStaleMkdirLockHas60SecondStalenessDetection(t *testing.T) {
 
 	// ClaimSlot in fallback mode must succeed after the stale lock is removed.
 	t.Setenv("LOCK_FALLBACK", "true")
-	sm := NewSlotManager(dir, DefaultMaxParallel)
+	sm := NewSlotManager(dir, DefaultAPIRPS)
 	writeCounterFile(t, dir, "0")
 
 	if err := sm.ClaimSlot(); err != nil {
@@ -667,7 +667,7 @@ func TestPIDReuseAcceptedAsFalsePositiveDuringReconciliation(t *testing.T) {
 		t.Errorf("IsProcessAlive(%d) = false, want true (PID reuse false positive)", pid)
 	}
 
-	sm, dir := newSMWithCounter(t, DefaultMaxParallel, 1)
+	sm, dir := newSMWithCounter(t, DefaultAPIRPS, 1)
 
 	jobs := []*Job{
 		{

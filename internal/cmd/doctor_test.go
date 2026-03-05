@@ -132,7 +132,7 @@ func TestDoctorCmdSlotsDisplay(t *testing.T) {
 	var buf bytes.Buffer
 	opts := cmd.DoctorOptions{
 		SubagentsRoot: root,
-		MaxParallel:   5,
+		APIRPS:   5,
 		ZAIEndpoint:   "http://127.0.0.1:1",
 		HTTPTimeout:   1 * time.Millisecond,
 	}
@@ -163,7 +163,7 @@ func TestConfigShowCmdDefaults(t *testing.T) {
 
 	expectedKeys := []string{
 		"model", "opus_model", "sonnet_model", "haiku_model",
-		"permission_mode", "max_parallel", "debug",
+		"permission_mode", "api_rps", "debug",
 		"zai_base_url", "zai_api_timeout_ms",
 	}
 	for _, key := range expectedKeys {
@@ -178,7 +178,7 @@ func TestConfigShowCmdDefaults(t *testing.T) {
 func TestConfigShowCmdWithTOML(t *testing.T) {
 	dir := t.TempDir()
 	toml := `model = "glm-4.9"
-max_parallel = 7
+api_rps = 7
 `
 	if err := os.WriteFile(filepath.Join(dir, "glm.toml"), []byte(toml), 0o644); err != nil {
 		t.Fatalf("write glm.toml: %v", err)
@@ -291,21 +291,21 @@ func TestConfigSetCmdInvalidPermissionMode(t *testing.T) {
 	}
 }
 
-// TestConfigSetCmdInvalidMaxParallel verifies that setting a non-numeric
-// max_parallel returns an error.
-func TestConfigSetCmdInvalidMaxParallel(t *testing.T) {
+// TestConfigSetCmdInvalidAPIRPS verifies that setting a non-numeric
+// api_rps returns an error.
+func TestConfigSetCmdInvalidAPIRPS(t *testing.T) {
 	dir := t.TempDir()
 	opts := cmd.ConfigSetOptions{
 		ConfigDir: dir,
-		Key:       "max_parallel",
+		Key:       "api_rps",
 		Value:     "not-a-number",
 	}
 	err := cmd.ConfigSetCmd(opts)
 	if err == nil {
-		t.Fatal("expected error for invalid max_parallel, got nil")
+		t.Fatal("expected error for invalid api_rps, got nil")
 	}
-	if !strings.Contains(err.Error(), "max_parallel") {
-		t.Errorf("error should mention 'max_parallel'; got: %s", err.Error())
+	if !strings.Contains(err.Error(), "api_rps") {
+		t.Errorf("error should mention 'api_rps'; got: %s", err.Error())
 	}
 }
 
