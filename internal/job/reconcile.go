@@ -35,47 +35,81 @@ func Reconcile(subagentsDir string, now time.Time) error {
 		if !entry.IsDir() {
 			continue
 		}
-		jobDir := filepath.Join(subagentsDir, entry.Name())
+		name := entry.Name()
 		// Skip special files/directories
-		if entry.Name() == ".running_count" || entry.Name() == ".counter.lock" {
+		if name == ".running_count" || name == ".counter.lock" || strings.HasSuffix(name, ".d") {
 			continue
 		}
-		status := readStatus(jobDir)
-		if status == "running" {
-			pid, err := readPID(jobDir)
-			if err != nil || !pidAlive(pid) {
-				if err := writeStatus(jobDir, "failed"); err != nil {
-					return err
-				}
-				pidStr := strconv.Itoa(pid)
-				if err := appendStderr(jobDir, fmt.Sprintf("[GoLeM] Process died unexpectedly (PID %s)", pidStr)); err != nil {
-					return err
-				}
-				if err := appendStderr(jobDir, staleRecoveredMarker); err != nil {
-					return err
-				}
-			} else {
-				runningCount++
-			}
-		} else if status == "queued" {
-			stale, err := IsStaleQueued(jobDir, now)
+		dir := filepath.Join(subagentsDir, name)
+
+		// Check if this is a job dir (has status file) or a project dir.
+		if _, err := os.Stat(filepath.Join(dir, "status")); err == nil {
+			// Flat layout: direct job directory.
+			n, err := reconcileJob(dir, now)
 			if err != nil {
 				return err
 			}
-			if stale {
-				if err := writeStatus(jobDir, "failed"); err != nil {
+			runningCount += n
+		} else {
+			// Project-scoped layout: scan for job-* subdirectories.
+			subentries, err := os.ReadDir(dir)
+			if err != nil {
+				continue
+			}
+			for _, sub := range subentries {
+				if !sub.IsDir() || !strings.HasPrefix(sub.Name(), "job-") {
+					continue
+				}
+				jobDir := filepath.Join(dir, sub.Name())
+				n, err := reconcileJob(jobDir, now)
+				if err != nil {
 					return err
 				}
-				if err := appendStderr(jobDir, "[GoLeM] Job stuck in queue for over 5 minutes"); err != nil {
-					return err
-				}
-				if err := appendStderr(jobDir, staleRecoveredMarker); err != nil {
-					return err
-				}
+				runningCount += n
 			}
 		}
 	}
 	return writeSlotCounter(filepath.Join(subagentsDir, ".running_count"), runningCount)
+}
+
+// reconcileJob processes a single job directory, returning 1 if the job is
+// alive and running, 0 otherwise.
+func reconcileJob(jobDir string, now time.Time) (int, error) {
+	status := readStatus(jobDir)
+	if status == "running" {
+		pid, err := readPID(jobDir)
+		if err != nil || !pidAlive(pid) {
+			if err := writeStatus(jobDir, "failed"); err != nil {
+				return 0, err
+			}
+			pidStr := strconv.Itoa(pid)
+			if err := appendStderr(jobDir, fmt.Sprintf("[GoLeM] Process died unexpectedly (PID %s)", pidStr)); err != nil {
+				return 0, err
+			}
+			if err := appendStderr(jobDir, staleRecoveredMarker); err != nil {
+				return 0, err
+			}
+			return 0, nil
+		}
+		return 1, nil
+	} else if status == "queued" {
+		stale, err := IsStaleQueued(jobDir, now)
+		if err != nil {
+			return 0, err
+		}
+		if stale {
+			if err := writeStatus(jobDir, "failed"); err != nil {
+				return 0, err
+			}
+			if err := appendStderr(jobDir, "[GoLeM] Job stuck in queue for over 5 minutes"); err != nil {
+				return 0, err
+			}
+			if err := appendStderr(jobDir, staleRecoveredMarker); err != nil {
+				return 0, err
+			}
+		}
+	}
+	return 0, nil
 }
 
 // CheckJobPID reads the pid.txt for the job at jobDir, checks whether the
@@ -222,20 +256,50 @@ func CleanStale(subagentsDir string) error {
 		if !entry.IsDir() {
 			continue
 		}
-		jobDir := filepath.Join(subagentsDir, entry.Name())
+		name := entry.Name()
 		// Skip special files/directories
-		if entry.Name() == ".running_count" || entry.Name() == ".counter.lock" {
+		if name == ".running_count" || name == ".counter.lock" || strings.HasSuffix(name, ".d") {
 			continue
 		}
-		data, err := os.ReadFile(filepath.Join(jobDir, "stderr.txt"))
-		if err != nil {
-			// If stderr.txt doesn't exist, leave the job alone
-			continue
-		}
-		if strings.Contains(string(data), staleRecoveredMarker) {
-			if err := os.RemoveAll(jobDir); err != nil {
+		dir := filepath.Join(subagentsDir, name)
+
+		// Check if this is a job dir (has status file) or a project dir.
+		if _, err := os.Stat(filepath.Join(dir, "status")); err == nil {
+			// Flat layout: direct job directory.
+			if err := cleanStaleJob(dir); err != nil {
 				return err
 			}
+		} else {
+			// Project-scoped layout: scan for job-* subdirectories.
+			subentries, err := os.ReadDir(dir)
+			if err != nil {
+				continue
+			}
+			for _, sub := range subentries {
+				if !sub.IsDir() || !strings.HasPrefix(sub.Name(), "job-") {
+					continue
+				}
+				jobDir := filepath.Join(dir, sub.Name())
+				if err := cleanStaleJob(jobDir); err != nil {
+					return err
+				}
+			}
+		}
+	}
+	return nil
+}
+
+// cleanStaleJob removes a single job directory if it was auto-recovered by
+// Reconcile (i.e. its stderr.txt contains staleRecoveredMarker).
+func cleanStaleJob(jobDir string) error {
+	data, err := os.ReadFile(filepath.Join(jobDir, "stderr.txt"))
+	if err != nil {
+		// If stderr.txt doesn't exist, leave the job alone.
+		return nil
+	}
+	if strings.Contains(string(data), staleRecoveredMarker) {
+		if err := os.RemoveAll(jobDir); err != nil {
+			return err
 		}
 	}
 	return nil

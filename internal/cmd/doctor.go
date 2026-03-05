@@ -2,6 +2,7 @@
 package cmd
 
 import (
+	"encoding/json"
 	"fmt"
 	"io"
 	"net/http"
@@ -14,6 +15,7 @@ import (
 	"time"
 
 	"github.com/veschin/GoLeM/internal/config"
+	"github.com/veschin/GoLeM/internal/proxy"
 )
 
 // CheckResult holds the result of a single diagnostic check.
@@ -37,12 +39,14 @@ type DoctorOptions struct {
 	HTTPTimeout time.Duration
 	// SubagentsRoot is used to count running jobs for slot reporting.
 	SubagentsRoot string
-	// MaxParallel is the configured max_parallel value (for slot reporting).
-	MaxParallel int
+	// APIRPS is the configured api_rps value (for slot reporting).
+	APIRPS int
 	// OpusModel, SonnetModel, HaikuModel are the configured model names.
 	OpusModel   string
 	SonnetModel string
 	HaikuModel  string
+	// ConfigDir is the directory containing proxy PID/port files.
+	ConfigDir string
 }
 
 // DoctorCmd runs all diagnostic checks and writes a human-readable report to w.
@@ -62,9 +66,9 @@ func DoctorCmd(opts DoctorOptions, w io.Writer) error {
 	if httpTimeout == 0 {
 		httpTimeout = 5 * time.Second
 	}
-	maxParallel := opts.MaxParallel
-	if maxParallel == 0 {
-		maxParallel = 3
+	apiRPS := opts.APIRPS
+	if apiRPS == 0 {
+		apiRPS = 3
 	}
 	opusModel := opts.OpusModel
 	if opusModel == "" {
@@ -94,10 +98,13 @@ func DoctorCmd(opts DoctorOptions, w io.Writer) error {
 	checks = append(checks, checkModels(opusModel, sonnetModel, haikuModel))
 
 	// Check 5: Slots usage.
-	checks = append(checks, checkSlots(opts.SubagentsRoot, maxParallel))
+	checks = append(checks, checkSlots(opts.SubagentsRoot, apiRPS))
 
 	// Check 6: Platform.
 	checks = append(checks, checkPlatform())
+
+	// Check 7: Proxy.
+	checks = append(checks, checkProxy(opts.ConfigDir))
 
 	// Write the report.
 	for _, c := range checks {
@@ -207,8 +214,8 @@ func checkModels(opus, sonnet, haiku string) CheckResult {
 	}
 }
 
-// checkSlots counts running jobs and compares against max_parallel.
-func checkSlots(subagentsRoot string, maxParallel int) CheckResult {
+// checkSlots counts running jobs and compares against api_rps.
+func checkSlots(subagentsRoot string, apiRPS int) CheckResult {
 	running := 0
 	if subagentsRoot != "" {
 		running = countRunningJobs(subagentsRoot)
@@ -216,7 +223,7 @@ func checkSlots(subagentsRoot string, maxParallel int) CheckResult {
 	return CheckResult{
 		Name:   "slots",
 		Status: "OK",
-		Detail: fmt.Sprintf("%d/%d slots in use", running, maxParallel),
+		Detail: fmt.Sprintf("%d/%d slots in use", running, apiRPS),
 	}
 }
 
@@ -269,6 +276,63 @@ func checkPlatform() CheckResult {
 	}
 }
 
+// proxyHealthResponse is the JSON body returned by the proxy /health endpoint.
+type proxyHealthResponse struct {
+	Status        string `json:"status"`
+	Active        int64  `json:"active"`
+	Queued        int64  `json:"queued"`
+	Port          int    `json:"port"`
+	TotalRequests int64  `json:"total_requests"`
+	UptimeSec     int64  `json:"uptime_sec"`
+}
+
+// checkProxy checks whether the proxy daemon is running and reports its stats.
+func checkProxy(configDir string) CheckResult {
+	if configDir == "" {
+		return CheckResult{
+			Name:   "proxy",
+			Status: "WARN",
+			Detail: "proxy not running",
+		}
+	}
+
+	port, alive := proxy.IsRunning(configDir)
+	if !alive {
+		return CheckResult{
+			Name:   "proxy",
+			Status: "WARN",
+			Detail: "proxy not running",
+		}
+	}
+
+	client := &http.Client{Timeout: 2 * time.Second}
+	url := fmt.Sprintf("http://localhost:%d/health", port)
+	resp, err := client.Get(url)
+	if err != nil {
+		return CheckResult{
+			Name:   "proxy",
+			Status: "WARN",
+			Detail: fmt.Sprintf("proxy running on port %d but /health unreachable: %v", port, err),
+		}
+	}
+	defer resp.Body.Close()
+
+	var hr proxyHealthResponse
+	if err := json.NewDecoder(resp.Body).Decode(&hr); err != nil {
+		return CheckResult{
+			Name:   "proxy",
+			Status: "WARN",
+			Detail: fmt.Sprintf("proxy running on port %d but /health response unreadable: %v", port, err),
+		}
+	}
+
+	return CheckResult{
+		Name:   "proxy",
+		Status: "OK",
+		Detail: fmt.Sprintf("active=%d queued=%d total=%d uptime=%ds", hr.Active, hr.Queued, hr.TotalRequests, hr.UptimeSec),
+	}
+}
+
 // ConfigEntry represents one key-value pair in "glm config show" output.
 type ConfigEntry struct {
 	Key    string
@@ -301,7 +365,7 @@ func ConfigShowCmd(opts ConfigShowOptions, w io.Writer) error {
 		"sonnet_model":       config.DefaultModel,
 		"haiku_model":        config.DefaultModel,
 		"permission_mode":    config.DefaultPermissionMode,
-		"max_parallel":       strconv.Itoa(config.DefaultMaxParallel),
+		"api_rps":            strconv.Itoa(config.DefaultAPIRPS),
 		"debug":              "false",
 		"zai_base_url":       config.ZaiBaseURL,
 		"zai_api_timeout_ms": config.ZaiAPITimeoutMs,
@@ -325,7 +389,7 @@ func ConfigShowCmd(opts ConfigShowOptions, w io.Writer) error {
 		"sonnet_model":    "GLM_SONNET_MODEL",
 		"haiku_model":     "GLM_HAIKU_MODEL",
 		"permission_mode": "GLM_PERMISSION_MODE",
-		"max_parallel":    "GLM_MAX_PARALLEL",
+		"api_rps":         "GLM_API_RPS",
 		"debug":           "GLM_DEBUG",
 	}
 
@@ -336,7 +400,7 @@ func ConfigShowCmd(opts ConfigShowOptions, w io.Writer) error {
 		"sonnet_model",
 		"haiku_model",
 		"permission_mode",
-		"max_parallel",
+		"api_rps",
 		"debug",
 		"zai_base_url",
 		"zai_api_timeout_ms",
@@ -348,15 +412,27 @@ func ConfigShowCmd(opts ConfigShowOptions, w io.Writer) error {
 		value := defaults[key]
 		source := "(default)"
 
-		// Check TOML.
+		// Check TOML. For api_rps, also accept legacy key max_parallel for backward compat.
 		if v, ok := tomlValues[key]; ok {
 			value = v
 			source = "(config)"
+		} else if key == "api_rps" {
+			if v, ok := tomlValues["max_parallel"]; ok {
+				value = v
+				source = "(config)"
+			}
 		}
 
 		// Check env var (overrides TOML).
 		if envKey, ok := envMappings[key]; ok {
 			if v := getenv(envKey); v != "" {
+				value = v
+				source = "(env)"
+			}
+		}
+		// For api_rps, also accept GLM_MAX_PARALLEL for backward compat (GLM_API_RPS takes priority).
+		if key == "api_rps" {
+			if v := getenv("GLM_MAX_PARALLEL"); v != "" && getenv("GLM_API_RPS") == "" {
 				value = v
 				source = "(env)"
 			}
@@ -404,7 +480,7 @@ var KnownConfigKeys = []string{
 	"sonnet_model",
 	"haiku_model",
 	"permission_mode",
-	"max_parallel",
+	"api_rps",
 	"debug",
 }
 
@@ -457,10 +533,10 @@ func ConfigSetCmd(opts ConfigSetOptions) error {
 // validateConfigValue validates a value for the given config key.
 func validateConfigValue(key, value string) error {
 	switch key {
-	case "max_parallel":
+	case "api_rps":
 		n, err := strconv.Atoi(value)
 		if err != nil || n < 0 {
-			return fmt.Errorf("err:user \"Invalid value for max_parallel: %s (must be a non-negative integer)\"", value)
+			return fmt.Errorf("err:user \"Invalid value for api_rps: %s (must be a non-negative integer)\"", value)
 		}
 	case "permission_mode":
 		validModes := map[string]bool{
@@ -518,7 +594,7 @@ func setTOMLKey(existing, key, value string) string {
 // formatTOMLValue formats a value for TOML output based on the key type.
 func formatTOMLValue(key, value string) string {
 	switch key {
-	case "max_parallel":
+	case "api_rps":
 		// Integer values — no quotes.
 		return value
 	case "debug":

@@ -2,7 +2,9 @@
 package main
 
 import (
+	"encoding/json"
 	"fmt"
+	"net/http"
 	"os"
 	"os/signal"
 	"path/filepath"
@@ -17,6 +19,8 @@ import (
 	"github.com/veschin/GoLeM/internal/exitcode"
 	"github.com/veschin/GoLeM/internal/job"
 	"github.com/veschin/GoLeM/internal/log"
+	"github.com/veschin/GoLeM/internal/proxy"
+	"github.com/veschin/GoLeM/internal/slot"
 )
 
 const version = "1.1.3"
@@ -100,6 +104,8 @@ func run(args []string) int {
 		return cmdInstall()
 	case "_uninstall":
 		return cmdUninstall()
+	case "_proxy":
+		return cmdProxy(rest)
 	case "version", "--version", "-v":
 		fmt.Println("glm " + version)
 		return 0
@@ -157,7 +163,7 @@ func loadConfig() (*config.Config, error) {
 	if err != nil {
 		return nil, err
 	}
-	logger.Debug(fmt.Sprintf("model=%s max_parallel=%d", cfg.Model, cfg.MaxParallel))
+	logger.Debug(fmt.Sprintf("model=%s api_rps=%d", cfg.Model, cfg.APIRPS))
 	return cfg, nil
 }
 
@@ -168,6 +174,18 @@ func resolveProjectID(workdir string) string {
 		abs = workdir
 	}
 	return job.ResolveProjectID(abs)
+}
+
+// reconcileAndInitSlots runs startup reconciliation and creates a SlotManager.
+func reconcileAndInitSlots(cfg *config.Config) (*slot.SlotManager, error) {
+	if err := job.Reconcile(cfg.SubagentDir, time.Now()); err != nil {
+		logger.Warn("reconcile: " + err.Error())
+	}
+	sm := slot.NewSlotManager(cfg.SubagentDir, cfg.APIRPS)
+	if err := sm.Init(); err != nil {
+		return nil, fmt.Errorf("slot init: %w", err)
+	}
+	return sm, nil
 }
 
 // die prints an error message to stderr and returns the appropriate exit code.
@@ -234,6 +252,8 @@ func cmdRun(args []string) int {
 		return die(err)
 	}
 
+	ensureProxy(cfg)
+
 	// Apply config defaults.
 	if flags.Timeout <= 0 {
 		flags.Timeout = config.DefaultTimeout
@@ -242,6 +262,19 @@ func cmdRun(args []string) int {
 	if err := cmd.Validate(flags); err != nil {
 		return die(err)
 	}
+
+	sm, err := reconcileAndInitSlots(cfg)
+	if err != nil {
+		return die(err)
+	}
+	if err := sm.WaitForSlot(); err != nil {
+		return die(err)
+	}
+	defer func() {
+		if releaseErr := sm.ReleaseSlot(); releaseErr != nil {
+			logger.Warn("release slot: " + releaseErr.Error())
+		}
+	}()
 
 	projectID := resolveProjectID(flags.Dir)
 
@@ -309,11 +342,18 @@ func cmdStart(args []string) int {
 		return die(err)
 	}
 
+	ensureProxy(cfg)
+
 	if flags.Timeout <= 0 {
 		flags.Timeout = config.DefaultTimeout
 	}
 
 	if err := cmd.Validate(flags); err != nil {
+		return die(err)
+	}
+
+	sm, err := reconcileAndInitSlots(cfg)
+	if err != nil {
 		return die(err)
 	}
 
@@ -333,15 +373,32 @@ func cmdStart(args []string) int {
 	// Print job ID immediately.
 	fmt.Fprintln(os.Stdout, jobID)
 
-	// Run in background goroutine.
+	// Run in background goroutine with slot management.
+	done := make(chan struct{})
 	go func() {
+		defer close(done)
+		slotClaimed := false
 		defer func() {
 			if r := recover(); r != nil {
 				_ = os.WriteFile(filepath.Join(j.Dir, "status"), []byte("failed"), 0o644)
 				_ = os.WriteFile(filepath.Join(j.Dir, "stderr.txt"),
 					[]byte(fmt.Sprintf("panic: %v", r)), 0o644)
 			}
+			if slotClaimed {
+				if releaseErr := sm.ReleaseSlot(); releaseErr != nil {
+					logger.Warn("release slot: " + releaseErr.Error())
+				}
+			}
 		}()
+
+		// Wait for a slot — job stays "queued" until acquired.
+		if waitErr := sm.WaitForSlot(); waitErr != nil {
+			_ = os.WriteFile(filepath.Join(j.Dir, "status"), []byte("failed"), 0o644)
+			_ = os.WriteFile(filepath.Join(j.Dir, "stderr.txt"),
+				[]byte(fmt.Sprintf("slot wait failed: %v", waitErr)), 0o644)
+			return
+		}
+		slotClaimed = true
 
 		_ = j.StatusTransition(job.StatusRunning)
 
@@ -354,14 +411,16 @@ func cmdStart(args []string) int {
 		_ = os.WriteFile(filepath.Join(j.Dir, "status"), []byte(finalStatus), 0o644)
 	}()
 
-	// Wait for background goroutine to complete.
-	// For a proper daemon we'd need fork, but Go doesn't support fork.
-	// Instead, handle SIGINT/SIGTERM gracefully.
+	// Wait for completion or signal.
 	sig := make(chan os.Signal, 1)
 	signal.Notify(sig, syscall.SIGINT, syscall.SIGTERM)
-	<-sig
 
-	return 0
+	select {
+	case <-sig:
+		return 0
+	case <-done:
+		return 0
+	}
 }
 
 func cmdStatus(args []string) int {
@@ -497,6 +556,27 @@ func cmdList(args []string) int {
 		return 0
 	}
 
+	// Print proxy stats header if the proxy is running.
+	if port, alive := proxy.IsRunning(cfg.ConfigDir); alive {
+		proxyClient := &http.Client{Timeout: 2 * time.Second}
+		proxyURL := fmt.Sprintf("http://localhost:%d/health", port)
+		if resp, err := proxyClient.Get(proxyURL); err == nil {
+			var hr struct {
+				Active        int64 `json:"active"`
+				Queued        int64 `json:"queued"`
+				TotalRequests int64 `json:"total_requests"`
+				UptimeSec     int64 `json:"uptime_sec"`
+			}
+			if jsonErr := json.NewDecoder(resp.Body).Decode(&hr); jsonErr == nil {
+				uptime := time.Duration(hr.UptimeSec) * time.Second
+				uptimeStr := uptime.Round(time.Second).String()
+				fmt.Fprintf(os.Stdout, "Proxy: active=%d queued=%d total=%d | uptime=%s\n",
+					hr.Active, hr.Queued, hr.TotalRequests, uptimeStr)
+			}
+			resp.Body.Close()
+		}
+	}
+
 	if err := cmd.ListCmd(cfg.SubagentDir, os.Stdout, &filter); err != nil {
 		return die(err)
 	}
@@ -579,6 +659,8 @@ func cmdChain(args []string) int {
 		return die(err)
 	}
 
+	ensureProxy(cfg)
+
 	if flags.Timeout <= 0 {
 		flags.Timeout = config.DefaultTimeout
 	}
@@ -598,6 +680,19 @@ func cmdChain(args []string) int {
 		ContinueOnError: continueOnError,
 		Prompts:         prompts,
 	}
+
+	sm, slotErr := reconcileAndInitSlots(cfg)
+	if slotErr != nil {
+		return die(slotErr)
+	}
+	if slotErr = sm.WaitForSlot(); slotErr != nil {
+		return die(slotErr)
+	}
+	defer func() {
+		if releaseErr := sm.ReleaseSlot(); releaseErr != nil {
+			logger.Warn("release slot: " + releaseErr.Error())
+		}
+	}()
 
 	result, err := cmd.ChainCmd(cf, cfg.SubagentDir, projectID, os.Stdout, os.Stderr)
 	if err != nil {
@@ -682,7 +777,7 @@ func cmdDoctor() int {
 		cfg = &config.Config{
 			SubagentDir: filepath.Join(home, ".claude", "subagents"),
 			ConfigDir:   filepath.Join(home, ".config", "GoLeM"),
-			MaxParallel: config.DefaultMaxParallel,
+			APIRPS:      config.DefaultAPIRPS,
 			OpusModel:   config.DefaultModel,
 			SonnetModel: config.DefaultModel,
 			HaikuModel:  config.DefaultModel,
@@ -695,10 +790,11 @@ func cmdDoctor() int {
 		ZAIEndpoint:      config.ZaiBaseURL,
 		HTTPTimeout:      5 * time.Second,
 		SubagentsRoot:    cfg.SubagentDir,
-		MaxParallel:      cfg.MaxParallel,
+		APIRPS:           cfg.APIRPS,
 		OpusModel:        cfg.OpusModel,
 		SonnetModel:      cfg.SonnetModel,
 		HaikuModel:       cfg.HaikuModel,
+		ConfigDir:        cfg.ConfigDir,
 	}
 
 	if err := cmd.DoctorCmd(opts, os.Stdout); err != nil {
@@ -842,6 +938,130 @@ func cmdUninstall() int {
 		return die(err)
 	}
 	return 0
+}
+
+func cmdProxy(args []string) int {
+	cfg, err := loadConfig()
+	if err != nil {
+		return die(err)
+	}
+
+	port := cfg.ProxyPort
+	concurrency := cfg.APIRPS
+	idleTimeout := cfg.ProxyIdleTimeout
+	target := cfg.ZaiBaseURL
+	configDir := cfg.ConfigDir
+
+	// Parse flags
+	for i := 0; i < len(args); i++ {
+		switch args[i] {
+		case "--port":
+			if i+1 < len(args) {
+				i++
+				if n, err := strconv.Atoi(args[i]); err == nil {
+					port = n
+				}
+			}
+		case "--concurrency":
+			if i+1 < len(args) {
+				i++
+				if n, err := strconv.Atoi(args[i]); err == nil {
+					concurrency = n
+				}
+			}
+		case "--idle-timeout":
+			if i+1 < len(args) {
+				i++
+				if n, err := strconv.Atoi(args[i]); err == nil {
+					idleTimeout = n
+				}
+			}
+		case "--target":
+			if i+1 < len(args) {
+				i++
+				target = args[i]
+			}
+		case "--config-dir":
+			if i+1 < len(args) {
+				i++
+				configDir = args[i]
+			}
+		}
+	}
+
+	p := proxy.New(proxy.Config{
+		TargetURL:   target,
+		Concurrency: concurrency,
+		IdleTimeout: time.Duration(idleTimeout) * time.Second,
+		Port:        port,
+		LogFile:     filepath.Join(configDir, "proxy.log"),
+	})
+
+	// Start the proxy in a goroutine so we can write the PID file
+	// between binding the listener and blocking on Serve.
+	errCh := make(chan error, 1)
+	go func() {
+		_, err := p.Start()
+		errCh <- err
+	}()
+
+	// Wait until the proxy has bound the listener and the port is known.
+	deadline := time.Now().Add(5 * time.Second)
+	boundPort := 0
+	for time.Now().Before(deadline) {
+		if bp := p.Port(); bp > 0 {
+			boundPort = bp
+			break
+		}
+		time.Sleep(10 * time.Millisecond)
+	}
+
+	if boundPort == 0 {
+		// Start returned an error before binding.
+		select {
+		case startErr := <-errCh:
+			if startErr != nil {
+				return die(startErr)
+			}
+		default:
+		}
+		return die(fmt.Errorf("proxy: failed to bind listener within 5 seconds"))
+	}
+
+	// Write PID and port files so other glm instances can discover this proxy.
+	if err := proxy.WritePIDFile(configDir, os.Getpid(), boundPort); err != nil {
+		logger.Warn("proxy: " + err.Error())
+	}
+	defer func() {
+		if cleanErr := proxy.CleanPIDFile(configDir); cleanErr != nil {
+			logger.Warn("proxy: " + cleanErr.Error())
+		}
+	}()
+
+	// Block until the proxy shuts down (idle timeout or signal).
+	if err := <-errCh; err != nil {
+		return die(err)
+	}
+	return 0
+}
+
+// ensureProxy starts the rate-limiting proxy if enabled and updates cfg.ZaiBaseURL
+// to point at the local proxy port.
+func ensureProxy(cfg *config.Config) {
+	if !cfg.ProxyEnabled {
+		return
+	}
+	glmBin, err := os.Executable()
+	if err != nil {
+		logger.Warn("proxy: cannot find executable: " + err.Error())
+		return
+	}
+	proxyPort, err := proxy.EnsureRunning(glmBin, cfg.ConfigDir, cfg.ZaiBaseURL, cfg.APIRPS, time.Duration(cfg.ProxyIdleTimeout)*time.Second)
+	if err != nil {
+		logger.Warn("proxy: " + err.Error())
+		return
+	}
+	cfg.ZaiBaseURL = fmt.Sprintf("http://localhost:%d/api/anthropic", proxyPort)
 }
 
 // buildClaudeConfig creates a claude.Config from the loaded config and parsed flags.

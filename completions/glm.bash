@@ -7,7 +7,7 @@ _glm() {
 
     local commands="session run start status result log list clean kill chain update doctor config _install _uninstall version help"
     local flags="-d -t -m --model --opus --sonnet --haiku --unsafe --mode --json"
-    local config_keys="model opus_model sonnet_model haiku_model permission_mode max_parallel debug"
+    local config_keys="model opus_model sonnet_model haiku_model permission_mode api_rps debug"
     local status_values="queued running done failed cancelled permission_error"
     local modes="bypassPermissions acceptEdits plan"
 

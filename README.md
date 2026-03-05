@@ -118,7 +118,7 @@ Claude Code uses three model slots internally: heavy tasks go to opus, normal ta
 
 ```bash
 glm config show                   # all values with source labels: (default), (config), (env)
-glm config set max_parallel 5
+glm config set api_rps 5
 glm config set model glm-4
 ```
 
@@ -129,7 +129,7 @@ glm config set model glm-4
 | `sonnet_model` | `GLM_SONNET_MODEL` | (model) | Model for normal tasks |
 | `haiku_model` | `GLM_HAIKU_MODEL` | (model) | Model for fast tasks |
 | `permission_mode` | `GLM_PERMISSION_MODE` | `bypassPermissions` | Default permission mode |
-| `max_parallel` | `GLM_MAX_PARALLEL` | `3` | Max parallel agents |
+| `api_rps` | `GLM_API_RPS` | `3` | Max parallel agents (API requests per second) |
 
 Debug logging (`GLM_DEBUG=1`) is read directly from the environment, not from the config file:
 

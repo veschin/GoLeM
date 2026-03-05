@@ -67,7 +67,7 @@ complete -c glm -n "__fish_seen_subcommand_from config" -a "show" -d "Show curre
 complete -c glm -n "__fish_seen_subcommand_from config" -a "set" -d "Set config value"
 
 # config keys for set
-set -l config_keys model opus_model sonnet_model haiku_model permission_mode max_parallel debug
+set -l config_keys model opus_model sonnet_model haiku_model permission_mode api_rps debug
 complete -c glm -n "__fish_seen_subcommand_from config; and __fish_seen_subcommand_from set" -a "$config_keys"
 
 # doctor flags

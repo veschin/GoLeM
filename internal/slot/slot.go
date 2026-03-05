@@ -1,6 +1,6 @@
 // Package slot manages concurrency control for GoLeM subagents.
 // It uses file-based counters with exclusive flock locking to limit
-// the number of simultaneously running subagents (max_parallel).
+// the number of simultaneously running subagents (api_rps).
 package slot
 
 import (
@@ -18,8 +18,8 @@ const (
 	CounterFile = ".running_count"
 	// LockFile is the filename for the exclusive file lock.
 	LockFile = ".counter.lock"
-	// DefaultMaxParallel is the default concurrency limit matching Z.AI coding plan.
-	DefaultMaxParallel = 3
+	// DefaultAPIRPS is the default API requests-per-second limit matching Z.AI coding plan.
+	DefaultAPIRPS = 3
 	// PollInterval is the polling interval in seconds when waiting for a slot.
 	PollInterval = 2
 	// StaleLockSeconds is the staleness threshold for mkdir-based locks.

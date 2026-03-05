@@ -16,9 +16,12 @@ const (
 	ZaiBaseURL            = "https://api.z.ai/api/anthropic"
 	ZaiAPITimeoutMs       = "3000000"
 	DefaultTimeout        = 3000
-	DefaultMaxParallel    = 3
+	DefaultAPIRPS         = 3
 	DefaultModel          = "glm-5"
-	DefaultPermissionMode = "bypassPermissions"
+	DefaultPermissionMode   = "bypassPermissions"
+	DefaultProxyEnabled     = true
+	DefaultProxyIdleTimeout = 600 // seconds
+	DefaultProxyPort        = 0   // 0 = auto-select
 )
 
 // Config holds all configuration values for GoLeM operations.
@@ -28,13 +31,16 @@ type Config struct {
 	SonnetModel     string
 	HaikuModel      string
 	PermissionMode  string
-	MaxParallel     int
+	APIRPS          int
 	SubagentDir     string
 	ConfigDir       string
 	ZaiBaseURL      string
 	ZaiAPIKey       string
 	ZaiAPITimeoutMs string
 	Debug           bool
+	ProxyEnabled     bool
+	ProxyIdleTimeout int // seconds
+	ProxyPort        int
 }
 
 // Options allows CLI flags to override config values after load.
@@ -58,12 +64,15 @@ func LoadWithOptions(configDir, subagentDir string, opts Options) (*Config, erro
 		SonnetModel:     DefaultModel,
 		HaikuModel:      DefaultModel,
 		PermissionMode:  DefaultPermissionMode,
-		MaxParallel:     DefaultMaxParallel,
+		APIRPS:          DefaultAPIRPS,
 		SubagentDir:     subagentDir,
 		ConfigDir:       configDir,
 		ZaiBaseURL:      ZaiBaseURL,
 		ZaiAPITimeoutMs: ZaiAPITimeoutMs,
-		Debug:           false,
+		Debug:            false,
+		ProxyEnabled:     DefaultProxyEnabled,
+		ProxyIdleTimeout: DefaultProxyIdleTimeout,
+		ProxyPort:        DefaultProxyPort,
 	}
 
 	// 1. Read TOML from configDir/glm.toml
@@ -143,11 +152,25 @@ func parseTOML(data string, cfg *Config) error {
 			cfg.HaikuModel = value
 		case "permission_mode":
 			cfg.PermissionMode = value
-		case "max_parallel":
+		case "api_rps", "max_parallel":
 			if n, err := strconv.Atoi(value); err == nil {
-				cfg.MaxParallel = n
+				cfg.APIRPS = n
 			} else {
-				return fmt.Errorf("err:config \"Failed to parse glm.toml: invalid max_parallel value '%s'\"", value)
+				return fmt.Errorf("err:config \"Failed to parse glm.toml: invalid api_rps value '%s'\"", value)
+			}
+		case "proxy_enabled":
+			cfg.ProxyEnabled = value == "true"
+		case "proxy_idle_timeout":
+			if n, err := strconv.Atoi(value); err == nil {
+				cfg.ProxyIdleTimeout = n
+			} else {
+				return fmt.Errorf("err:config \"Failed to parse glm.toml: invalid proxy_idle_timeout value '%s'\"", value)
+			}
+		case "proxy_port":
+			if n, err := strconv.Atoi(value); err == nil {
+				cfg.ProxyPort = n
+			} else {
+				return fmt.Errorf("err:config \"Failed to parse glm.toml: invalid proxy_port value '%s'\"", value)
 			}
 		}
 		// Unknown keys are ignored
@@ -229,7 +252,13 @@ func applyEnvOverrides(cfg *Config) {
 	}
 	if v := getenv("GLM_MAX_PARALLEL"); v != "" {
 		if n, err := strconv.Atoi(v); err == nil {
-			cfg.MaxParallel = n
+			cfg.APIRPS = n
+		}
+	}
+	// GLM_API_RPS takes priority over GLM_MAX_PARALLEL when both are set.
+	if v := getenv("GLM_API_RPS"); v != "" {
+		if n, err := strconv.Atoi(v); err == nil {
+			cfg.APIRPS = n
 		}
 	}
 	if v := getenv("GLM_DEBUG"); v != "" {
@@ -245,9 +274,9 @@ func validate(cfg *Config) error {
 		return fmt.Errorf("err:validation zai_api_key: API key is empty")
 	}
 
-	// Check max_parallel >= 0
-	if cfg.MaxParallel < 0 {
-		return fmt.Errorf("err:validation max_parallel: must be a non-negative integer (got %d)", cfg.MaxParallel)
+	// Check api_rps >= 0
+	if cfg.APIRPS < 0 {
+		return fmt.Errorf("err:validation max_parallel: must be a non-negative integer (got %d)", cfg.APIRPS)
 	}
 
 	// Check permission_mode in valid set
