@@ -6,7 +6,7 @@ features:
     issues: 0
   claude-execution:
     stage: impl
-    tests: passing
+    tests: written
     review: passed
     issues: 0
   concurrency-control:
@@ -41,7 +41,7 @@ features:
     issues: 0
   install-update:
     stage: impl
-    tests: passing
+    tests: written
     review: passed
     issues: 0
   job-filtering:
@@ -51,7 +51,7 @@ features:
     issues: 0
   job-lifecycle:
     stage: impl
-    tests: passing
+    tests: written
     review: passed
     issues: 0
   job-management:

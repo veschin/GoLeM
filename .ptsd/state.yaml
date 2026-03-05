@@ -25,12 +25,12 @@ features:
     tests:
       - .ptsd/bdd/agent-chaining.feature::internal/cmd/chain_test.go
   claude-execution:
-    stage: prd
+    stage: tests
     hashes:
       bdd: ed14201f7261b2d9d383a04f233b62eaf635ff1d5da70d343ba73cbb7c3d18c6
       prd: fda6e5de17e38f18428f6a262822ea755243dc21f97025f915a13d83141a322a
       seed: fe2550b40b1ab0919b12c81de23d25530b4d9e9390c28152a7ca6e9ef35ef12e
-      test: 6933bce752d817f3d30efb1c3caada89d6ff47d070fcc819546ed0c97aa60a23
+      test: 05054c89df5bcf67d2898d5f2d1eac499fc62704a30e786a74f0b29e44510ed0
     scores:
       bdd:
         score: 8
@@ -80,7 +80,7 @@ features:
       bdd: 1b680d95dfad88b7f36d765d4797cd15f020229eb6a43fc7397bf5abd6b6358c
       prd: fda6e5de17e38f18428f6a262822ea755243dc21f97025f915a13d83141a322a
       seed: c7da2fa92d7d61f089c29a074157803abd4a97bbf2cb1bccbd36d743e88fdfe5
-      test: 576127bf351accbd151b2c12fe30a93e6b669abc3c1637cb77b6dee09fdeff8b
+      test: d1d4c01a89429f63080d94b8ce0876c7dda9132a514000370c0eea7a72666859
     scores:
       bdd:
         score: 8
@@ -105,7 +105,7 @@ features:
       bdd: 1961f534688bed5d12121ef5adfa62d8d08d3ecdaf4614e432253afe08c2e5e1
       prd: fda6e5de17e38f18428f6a262822ea755243dc21f97025f915a13d83141a322a
       seed: efb72c0b2431a9bd897f71427671622387253f6fb2b40c656cdbee69ef3f96b1
-      test: 576127bf351accbd151b2c12fe30a93e6b669abc3c1637cb77b6dee09fdeff8b
+      test: d1d4c01a89429f63080d94b8ce0876c7dda9132a514000370c0eea7a72666859
       test_results: passed:0 failed:0
       test_status: failing
     scores:
@@ -132,7 +132,7 @@ features:
       bdd: 2894eb4a378a7effd8ef5aa2c09b54fdd030641ad0d379226d364e025a3008fc
       prd: fda6e5de17e38f18428f6a262822ea755243dc21f97025f915a13d83141a322a
       seed: ea2166410e9b6c8f606d7a7a93d7538ff2d6244b24be3a77870cb6dad28e6a27
-      test: 29a199a6bf6900db11101059de9d589d156ae770f8e21afd9d9e8e657cec33e2
+      test: b5ef75d79409546cec67d2e006d3eed538e9b7849768c3f8ae758342b67dd2c3
     scores:
       bdd:
         score: 8
@@ -157,7 +157,7 @@ features:
       bdd: af8aaab0bf35deed7b3fd932c75a060ff76d0796257612cce44516bf698bc25f
       prd: fda6e5de17e38f18428f6a262822ea755243dc21f97025f915a13d83141a322a
       seed: 6d151d5027c7e73a4500423cf7467aa5e1385310e1d0bf42b0d3648406c662a8
-      test: 6933bce752d817f3d30efb1c3caada89d6ff47d070fcc819546ed0c97aa60a23
+      test: 4ad8cc0dcb7194ccdf104d9c2dace413c23f205a6a188563b55480d7ff5eb905
     scores:
       bdd:
         score: 8
@@ -202,12 +202,12 @@ features:
     tests:
       - .ptsd/bdd/error-taxonomy.feature::internal/exitcode/exitcode_test.go
   install-update:
-    stage: prd
+    stage: tests
     hashes:
       bdd: 8312bb9c40014f9b5628ab08a52be86b347317b0d7779b8cc6f2a032568c7b0d
       prd: fda6e5de17e38f18428f6a262822ea755243dc21f97025f915a13d83141a322a
       seed: 92553d67256076dbd6a4d5f9a73f711e1808a9b908f130cf139a4be557114803
-      test: 29a199a6bf6900db11101059de9d589d156ae770f8e21afd9d9e8e657cec33e2
+      test: b5ef75d79409546cec67d2e006d3eed538e9b7849768c3f8ae758342b67dd2c3
     scores:
       bdd:
         score: 8
@@ -253,12 +253,12 @@ features:
     tests:
       - .ptsd/bdd/job-filtering.feature::internal/cmd/filter_test.go
   job-lifecycle:
-    stage: prd
+    stage: tests
     hashes:
       bdd: 612d790f663bfd3dd7d4d1bd2547671f949a1f206225ccc2dae9c5d0251dd86e
       prd: fda6e5de17e38f18428f6a262822ea755243dc21f97025f915a13d83141a322a
       seed: 2857457e5e9447fa6002dea547a7b39d54319d3710a98db5b328298749445292
-      test: de68ec8d07b1c881878029a86bf2ef341c809820b1e2af50dae694d0ce61d93b
+      test: 09a34e29a515b31235c5a61632e828cd36d31ee02beb65f50ff75891fb6daf6b
     scores:
       bdd:
         score: 8
@@ -333,7 +333,7 @@ features:
       bdd: 391417bc6dc0f6b240cecec98b675dfda89ed049df5fcbfc476990be02193f55
       prd: fda6e5de17e38f18428f6a262822ea755243dc21f97025f915a13d83141a322a
       seed: c2c80064352aa737713afe54edf624461eb615fe4c8e94a52b4fba685b02dfc9
-      test: 576127bf351accbd151b2c12fe30a93e6b669abc3c1637cb77b6dee09fdeff8b
+      test: d1d4c01a89429f63080d94b8ce0876c7dda9132a514000370c0eea7a72666859
     scores:
       bdd:
         score: 8
@@ -358,7 +358,7 @@ features:
       bdd: 0239fe61f7f3f8a877c03326cac421803f439d303047de66375bc2c4c2db8599
       prd: fda6e5de17e38f18428f6a262822ea755243dc21f97025f915a13d83141a322a
       seed: 02d04cc3a7c24f12dc8005df40f7e0b21ef7f9bc197902a4224fef02f3c3e5cf
-      test: 6933bce752d817f3d30efb1c3caada89d6ff47d070fcc819546ed0c97aa60a23
+      test: 4ad8cc0dcb7194ccdf104d9c2dace413c23f205a6a188563b55480d7ff5eb905
     scores:
       bdd:
         score: 8
@@ -408,7 +408,7 @@ features:
       bdd: 53ae559e0556ac7c5badc55d7ffc134df43a095e4c4751e0f84748687c41f313
       prd: fda6e5de17e38f18428f6a262822ea755243dc21f97025f915a13d83141a322a
       seed: d825981ecaad56d2f59285a1a7518f5e14ff8477731deec8a039b2d08955343c
-      test: aa7d67d77168fd56994d5d3456e73d134f36e43ed2561f3721a589139cf85d7b
+      test: 28ffe8a9397c5b82684a2b51abbbaf2294bd595c56d9dff8971f4f9769c2eaa4
     scores:
       bdd:
         score: 8
