@@ -11,7 +11,7 @@ features:
     issues: 0
   concurrency-control:
     stage: impl
-    tests: passing
+    tests: written
     review: passed
     issues: 0
   config-diagnostics:

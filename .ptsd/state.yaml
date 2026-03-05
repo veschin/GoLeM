@@ -50,12 +50,12 @@ features:
     tests:
       - .ptsd/bdd/claude-execution.feature::internal/claude/claude_test.go
   concurrency-control:
-    stage: prd
+    stage: tests
     hashes:
-      bdd: 9edbb97537604cfda3a35b845759793b9ce58e7edb45e3be3a0ec2e538798877
+      bdd: a498357851c34c3f5a534cf245c7e562bbb05582bb18436c5a1319d8cd90cb8e
       prd: fda6e5de17e38f18428f6a262822ea755243dc21f97025f915a13d83141a322a
       seed: 7d568668a01ba3a54a609f2c366f187d9b795b797dce33e5cbc5cf44d2578205
-      test: f8d44efe4494d969e706c61842261476da27120116a27c50cbefc07fe3e5d4ac
+      test: ae1220eb360aa0fd51f8acb348937abf9ebb8cfdb50bf5f337a9d9afe863ed3b
     scores:
       bdd:
         score: 8
@@ -80,7 +80,7 @@ features:
       bdd: 1b680d95dfad88b7f36d765d4797cd15f020229eb6a43fc7397bf5abd6b6358c
       prd: fda6e5de17e38f18428f6a262822ea755243dc21f97025f915a13d83141a322a
       seed: c7da2fa92d7d61f089c29a074157803abd4a97bbf2cb1bccbd36d743e88fdfe5
-      test: 8f75a10adda1a6aec4e469972d941265d0299c89f001f4b180a50f0e461bdca4
+      test: 576127bf351accbd151b2c12fe30a93e6b669abc3c1637cb77b6dee09fdeff8b
     scores:
       bdd:
         score: 8
@@ -105,7 +105,7 @@ features:
       bdd: 1961f534688bed5d12121ef5adfa62d8d08d3ecdaf4614e432253afe08c2e5e1
       prd: fda6e5de17e38f18428f6a262822ea755243dc21f97025f915a13d83141a322a
       seed: efb72c0b2431a9bd897f71427671622387253f6fb2b40c656cdbee69ef3f96b1
-      test: 8f75a10adda1a6aec4e469972d941265d0299c89f001f4b180a50f0e461bdca4
+      test: 576127bf351accbd151b2c12fe30a93e6b669abc3c1637cb77b6dee09fdeff8b
       test_results: passed:0 failed:0
       test_status: failing
     scores:
@@ -333,7 +333,7 @@ features:
       bdd: 391417bc6dc0f6b240cecec98b675dfda89ed049df5fcbfc476990be02193f55
       prd: fda6e5de17e38f18428f6a262822ea755243dc21f97025f915a13d83141a322a
       seed: c2c80064352aa737713afe54edf624461eb615fe4c8e94a52b4fba685b02dfc9
-      test: 8f75a10adda1a6aec4e469972d941265d0299c89f001f4b180a50f0e461bdca4
+      test: 576127bf351accbd151b2c12fe30a93e6b669abc3c1637cb77b6dee09fdeff8b
     scores:
       bdd:
         score: 8
@@ -383,7 +383,7 @@ features:
       bdd: 0a7be8c4106a22dcbc683c072c8bb15845cdc60bfa73d324049bfa43c1044a9d
       prd: fda6e5de17e38f18428f6a262822ea755243dc21f97025f915a13d83141a322a
       seed: ab99f2cc0b276a3922daa950b1ad0e30d3fb92bb319036c19f6caac1b186dfe9
-      test: 1b5ef45b8944bd28de6b4db6a47b4608a040e48fa896649ba2904711f3036cb2
+      test: 71dd708cbf6752edde060908862f3c42ab6096a8ed31b2edcc8533eff1c7750c
     scores:
       bdd:
         score: 8
