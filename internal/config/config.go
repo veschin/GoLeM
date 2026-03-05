@@ -143,14 +143,29 @@ func parseTOML(data string, cfg *Config) error {
 
 		switch key {
 		case "model":
+			if value == "" {
+				return fmt.Errorf(`err:config "Failed to parse glm.toml: model value is empty"`)
+			}
 			cfg.Model = value
 		case "opus_model":
+			if value == "" {
+				return fmt.Errorf(`err:config "Failed to parse glm.toml: opus_model value is empty"`)
+			}
 			cfg.OpusModel = value
 		case "sonnet_model":
+			if value == "" {
+				return fmt.Errorf(`err:config "Failed to parse glm.toml: sonnet_model value is empty"`)
+			}
 			cfg.SonnetModel = value
 		case "haiku_model":
+			if value == "" {
+				return fmt.Errorf(`err:config "Failed to parse glm.toml: haiku_model value is empty"`)
+			}
 			cfg.HaikuModel = value
 		case "permission_mode":
+			if value == "" {
+				return fmt.Errorf(`err:config "Failed to parse glm.toml: permission_mode value is empty"`)
+			}
 			cfg.PermissionMode = value
 		case "api_rps", "max_parallel":
 			if n, err := strconv.Atoi(value); err == nil {

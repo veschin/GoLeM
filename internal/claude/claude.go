@@ -145,7 +145,7 @@ func Execute(cfg Config) (int, error) {
 
 	flags := BuildFlags(cfg)
 	args := append(flags, cfg.Prompt)
-	cmd := exec.CommandContext(ctx, "claude", args...)
+	cmd := exec.Command("claude", args...)
 	cmd.Dir = cfg.WorkDir
 	cmd.Env = BuildEnv(cfg)
 	cmd.SysProcAttr = &syscall.SysProcAttr{Setpgid: true}
@@ -154,7 +154,23 @@ func Execute(cfg Config) (int, error) {
 	cmd.Stdout = &stdoutBuf
 	cmd.Stderr = &stderrBuf
 
-	runErr := cmd.Run()
+	if err := cmd.Start(); err != nil {
+		return 1, fmt.Errorf("start claude: %w", err)
+	}
+
+	// Wait for the process in a goroutine so we can select on context timeout.
+	done := make(chan error, 1)
+	go func() { done <- cmd.Wait() }()
+
+	var runErr error
+	select {
+	case runErr = <-done:
+		// Process exited normally (or with an error) before timeout.
+	case <-ctx.Done():
+		// Timeout — kill the entire process group, not just the child PID.
+		_ = syscall.Kill(-cmd.Process.Pid, syscall.SIGKILL)
+		runErr = <-done // wait for the process to actually exit
+	}
 
 	// Write finished_at.
 	finishedAt := time.Now().UTC().Format(time.RFC3339)
@@ -174,8 +190,12 @@ func Execute(cfg Config) (int, error) {
 		} else if exitErr, ok := runErr.(*exec.ExitError); ok {
 			exitCode = exitErr.ExitCode()
 			if exitCode < 0 {
-				// Negative exit code means the process was signalled; treat as failure.
-				exitCode = 1
+				// Preserve signal info: 128 + signal number (Unix convention).
+				if ws, ok := exitErr.Sys().(syscall.WaitStatus); ok && ws.Signaled() {
+					exitCode = 128 + int(ws.Signal())
+				} else {
+					exitCode = 1
+				}
 			}
 		} else {
 			exitCode = 1

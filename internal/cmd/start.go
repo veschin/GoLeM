@@ -13,30 +13,25 @@ import (
 type StartResult struct {
 	// JobID is the identifier of the newly created job.
 	JobID string
-	// PIDWritten is true if pid.txt was written before the job ID was printed.
+	// PIDWritten indicates whether pid.txt was written synchronously before
+	// returning. Since the PID is now written asynchronously inside the
+	// background goroutine (after the subprocess starts), this is always false
+	// at return time.
 	PIDWritten bool
 }
 
 // StartCmd executes a subagent job asynchronously:
 //  1. Creates a new job directory (queued status).
-//  2. Writes the current PID to pid.txt BEFORE printing the job ID.
-//  3. Prints the job ID to stdout as a single line (no decoration).
-//  4. Returns immediately with exit code 0.
-//  5. Launches a background goroutine that waits for a slot, runs claude,
+//  2. Prints the job ID to stdout as a single line (no decoration).
+//  3. Returns immediately with exit code 0 (PIDWritten = false).
+//  4. Launches a background goroutine that transitions to "running",
+//     writes the subprocess PID to pid.txt, executes the work,
 //     and sets the final status on completion (or "failed" on panic).
 func StartCmd(f *Flags, subagentsRoot, projectID string, stdout io.Writer) (*StartResult, error) {
 	// Generate job ID and create job directory
 	jobID := job.GenerateJobID()
 	j, err := job.NewJob(subagentsRoot, projectID, jobID)
 	if err != nil {
-		return nil, err
-	}
-
-	// Write current PID to pid.txt BEFORE printing job ID
-	pid := os.Getpid()
-	pidPath := filepath.Join(j.Dir, "pid.txt")
-	if err := os.WriteFile(pidPath, []byte(fmt.Sprintf("%d", pid)), 0o644); err != nil {
-		job.DeleteJob(j.Dir)
 		return nil, err
 	}
 
@@ -69,6 +64,15 @@ func StartCmd(f *Flags, subagentsRoot, projectID string, stdout io.Writer) (*Sta
 		// Set status to running.
 		writeStatus(job.StatusRunning)
 
+		// Write the subprocess PID to pid.txt.
+		// In production this would be the PID of the spawned claude process.
+		// Currently the goroutine IS the executor, so we write our own process PID.
+		pid := os.Getpid()
+		pidPath := filepath.Join(jobDir, "pid.txt")
+		if _, statErr := os.Stat(jobDir); statErr == nil {
+			_ = os.WriteFile(pidPath, []byte(fmt.Sprintf("%d", pid)), 0o644)
+		}
+
 		// Execute the actual work.
 		// In production, this would run the claude command.
 		// For tests, we simulate completion by checking if the work directory exists.
@@ -82,6 +86,6 @@ func StartCmd(f *Flags, subagentsRoot, projectID string, stdout io.Writer) (*Sta
 
 	return &StartResult{
 		JobID:      jobID,
-		PIDWritten: true,
+		PIDWritten: false,
 	}, nil
 }

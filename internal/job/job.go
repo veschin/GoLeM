@@ -11,6 +11,7 @@ import (
 	"hash/crc32"
 	"os"
 	"path/filepath"
+	"syscall"
 	"time"
 )
 
@@ -49,6 +50,22 @@ var allowedTransitions = map[Status][]Status{
 // located under any search path.
 var ErrNotFound = errors.New("err:not_found")
 
+// ValidateJobID checks that jobID contains only safe characters:
+// lowercase alphanumeric, hyphens, and underscores.
+// Returns an error if the ID is empty or contains path separators, dots,
+// or other unsafe chars.
+func ValidateJobID(jobID string) error {
+	if jobID == "" {
+		return fmt.Errorf("err:validation job ID is empty")
+	}
+	for _, r := range jobID {
+		if !((r >= 'a' && r <= 'z') || (r >= '0' && r <= '9') || r == '-' || r == '_') {
+			return fmt.Errorf("err:validation job ID contains invalid character: %q", r)
+		}
+	}
+	return nil
+}
+
 // Job holds the metadata for a single subagent job.
 type Job struct {
 	ID        string
@@ -59,6 +76,9 @@ type Job struct {
 // NewJob creates a new job directory under subagentsRoot/<projectID>/<jobID>/,
 // writes the initial "queued" status file atomically, and returns the Job.
 func NewJob(subagentsRoot, projectID, jobID string) (*Job, error) {
+	if err := ValidateJobID(jobID); err != nil {
+		return nil, err
+	}
 	dir := filepath.Join(subagentsRoot, projectID, jobID)
 	if err := os.MkdirAll(dir, 0o755); err != nil {
 		return nil, fmt.Errorf("create job dir: %w", err)
@@ -105,6 +125,9 @@ func ResolveProjectID(absPath string) string {
 //
 // Returns the absolute path to the job directory, or ErrNotFound.
 func FindJobDir(subagentsRoot, currentProjectID, jobID string) (string, error) {
+	if err := ValidateJobID(jobID); err != nil {
+		return "", err
+	}
 	// 1. Current project scope.
 	candidate := filepath.Join(subagentsRoot, currentProjectID, jobID)
 	if info, err := os.Stat(candidate); err == nil && info.IsDir() {
@@ -165,7 +188,20 @@ func (j *Job) SetStatus(newStatus Status) error {
 
 // StatusTransition validates and performs a status transition on j.
 // It returns an error if the transition is not permitted by the state machine.
+// The entire read-check-write sequence is protected by an exclusive flock to
+// prevent TOCTOU races when multiple processes transition the same job.
 func (j *Job) StatusTransition(newStatus Status) error {
+	lockPath := filepath.Join(j.Dir, "status.lock")
+	f, err := os.OpenFile(lockPath, os.O_CREATE|os.O_RDWR, 0o644)
+	if err != nil {
+		return fmt.Errorf("status lock: %w", err)
+	}
+	defer f.Close()
+	if err := syscall.Flock(int(f.Fd()), syscall.LOCK_EX); err != nil {
+		return fmt.Errorf("status flock: %w", err)
+	}
+	defer syscall.Flock(int(f.Fd()), syscall.LOCK_UN)
+
 	current := ReadStatus(j.Dir)
 	allowed := allowedTransitions[current]
 	for _, a := range allowed {

@@ -14,6 +14,8 @@ import (
 	"time"
 )
 
+const lockFile = "proxy.lock"
+
 const (
 	pidFile  = "proxy.pid"
 	portFile = "proxy.port"
@@ -30,7 +32,24 @@ type healthResponse struct {
 // PID/port/log files, targetURL is the upstream URL, concurrency limits parallel
 // requests, and idleTimeout controls how long the proxy waits before shutting itself
 // down when idle.
+//
+// A file-based flock around the check-and-spawn sequence prevents concurrent callers
+// from spawning duplicate proxy instances (TOCTOU race).
 func EnsureRunning(glmBinary, configDir, targetURL string, concurrency int, idleTimeout time.Duration) (int, error) {
+	// Acquire exclusive flock to serialize the IsRunning check + spawn.
+	lockPath := filepath.Join(configDir, lockFile)
+	lk, err := os.OpenFile(lockPath, os.O_CREATE|os.O_RDWR, 0o644)
+	if err != nil {
+		return 0, fmt.Errorf("proxy: open lock file: %w", err)
+	}
+	defer lk.Close()
+
+	if err := syscall.Flock(int(lk.Fd()), syscall.LOCK_EX); err != nil {
+		return 0, fmt.Errorf("proxy: flock: %w", err)
+	}
+	defer syscall.Flock(int(lk.Fd()), syscall.LOCK_UN)
+
+	// Re-check under lock — another caller may have started the proxy already.
 	if port, alive := IsRunning(configDir); alive {
 		return port, nil
 	}

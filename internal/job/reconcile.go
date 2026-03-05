@@ -26,6 +26,18 @@ const staleQueueThreshold = 5 * time.Minute
 // Reconcile is intended to be called exactly once at process startup.
 // now is injected so tests can control the clock.
 func Reconcile(subagentsDir string, now time.Time) error {
+	// Acquire exclusive lock to prevent concurrent reconciliation.
+	lockPath := filepath.Join(subagentsDir, ".reconcile.lock")
+	lf, err := os.OpenFile(lockPath, os.O_CREATE|os.O_RDWR, 0o644)
+	if err != nil {
+		return fmt.Errorf("reconcile lock: %w", err)
+	}
+	defer lf.Close()
+	if err := syscall.Flock(int(lf.Fd()), syscall.LOCK_EX); err != nil {
+		return fmt.Errorf("reconcile flock: %w", err)
+	}
+	defer syscall.Flock(int(lf.Fd()), syscall.LOCK_UN)
+
 	entries, err := os.ReadDir(subagentsDir)
 	if err != nil {
 		return err
@@ -37,7 +49,7 @@ func Reconcile(subagentsDir string, now time.Time) error {
 		}
 		name := entry.Name()
 		// Skip special files/directories
-		if name == ".running_count" || name == ".counter.lock" || strings.HasSuffix(name, ".d") {
+		if name == ".running_count" || name == ".counter.lock" || name == ".reconcile.lock" || strings.HasSuffix(name, ".d") {
 			continue
 		}
 		dir := filepath.Join(subagentsDir, name)
@@ -258,7 +270,7 @@ func CleanStale(subagentsDir string) error {
 		}
 		name := entry.Name()
 		// Skip special files/directories
-		if name == ".running_count" || name == ".counter.lock" || strings.HasSuffix(name, ".d") {
+		if name == ".running_count" || name == ".counter.lock" || name == ".reconcile.lock" || strings.HasSuffix(name, ".d") {
 			continue
 		}
 		dir := filepath.Join(subagentsDir, name)

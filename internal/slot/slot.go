@@ -118,9 +118,30 @@ func (sm *SlotManager) readCounter() (int, error) {
 	return val, nil
 }
 
-// writeCounter atomically writes n to the counter file.
+// writeCounter atomically writes n to the counter file using write-to-tmp + rename.
 func (sm *SlotManager) writeCounter(n int) error {
-	return os.WriteFile(sm.CounterPath(), []byte(strconv.Itoa(n)), 0o644)
+	target := sm.CounterPath()
+	dir := filepath.Dir(target)
+	tmp, err := os.CreateTemp(dir, ".counter-tmp-*")
+	if err != nil {
+		return err
+	}
+	tmpName := tmp.Name()
+
+	if _, err := tmp.WriteString(strconv.Itoa(n)); err != nil {
+		tmp.Close()
+		os.Remove(tmpName)
+		return err
+	}
+	if err := tmp.Close(); err != nil {
+		os.Remove(tmpName)
+		return err
+	}
+	if err := os.Rename(tmpName, target); err != nil {
+		os.Remove(tmpName)
+		return err
+	}
+	return nil
 }
 
 // withLock acquires an exclusive flock on LockPath, runs fn, then releases.
