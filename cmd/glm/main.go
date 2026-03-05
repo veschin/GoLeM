@@ -1061,7 +1061,7 @@ func ensureProxy(cfg *config.Config) {
 		logger.Warn("proxy: " + err.Error())
 		return
 	}
-	cfg.ZaiBaseURL = fmt.Sprintf("http://localhost:%d/api/anthropic", proxyPort)
+	cfg.ZaiBaseURL = fmt.Sprintf("http://localhost:%d", proxyPort)
 }
 
 // buildClaudeConfig creates a claude.Config from the loaded config and parsed flags.

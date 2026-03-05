@@ -73,6 +73,45 @@ const glmSubagentTemplate = `<!-- GLM-SUBAGENT-START -->
 ## GLM Subagent (GLM-5 via Z.AI) — MANDATORY
 
 You have access to ` + "`glm`" + ` — a tool that spawns parallel Claude Code agents powered by GLM-5 via Z.AI.
+` + "GLM agents are free, full Claude Code instances — they read/write files, run tests, use MCP servers and tools." + `
+
+### When to delegate to GLM
+- **Implementation work**: coding, refactoring, file edits, test writing
+- **Parallel independent tasks**: launch multiple agents with ` + "`glm start`" + `
+- **Sequential pipelines**: dependent steps with ` + "`glm chain`" + `
+- **NOT for**: tasks requiring user interaction or approval
+
+### Commands
+` + "```" + `
+glm run -d <dir> -t <sec> "prompt"    # sync: blocks until done, prints result
+glm start -d <dir> -t <sec> "prompt"  # async: prints job ID, runs in background
+glm chain -d <dir> "step1" "step2"    # sequential: stdout of step N → prompt of step N+1
+glm status <JOB_ID>                   # check: queued/running/done/failed/timeout
+glm result <JOB_ID>                   # read job stdout
+glm log    <JOB_ID>                   # read file changelog (edits, writes, deletes)
+glm list                              # list all jobs with proxy stats
+glm kill   <JOB_ID>                   # stop a running job
+` + "```" + `
+
+### Rules
+- **Always set -t (timeout)**: agents can hang. Use ` + "`-t 300`" + ` (5 min) or ` + "`-t 600`" + ` (10 min).
+- **Always set -d (directory)**: agents work in that directory. Use absolute paths.
+- **Flags before prompt**: ` + "`glm start -d /path -t 300 \"your prompt\"`" + ` — prompt is positional, must come last.
+- **Check results**: after ` + "`glm start`" + `, poll with ` + "`glm list`" + ` or ` + "`glm status <ID>`" + `, then read with ` + "`glm result <ID>`" + `.
+- **Rate limiting**: ` + "`api_rps`" + ` (default 3) controls max concurrent API calls. Extra agents queue automatically — no 429 errors.
+- **No mocks, no stubs**: GLM agents write real code in real directories.
+
+### Multi-agent pattern
+` + "```bash" + `
+# Launch parallel agents
+JOB1=$(glm start -d /path -t 300 "task 1")
+JOB2=$(glm start -d /path -t 300 "task 2")
+# Monitor
+glm list
+# Read results when done
+glm result $JOB1
+glm result $JOB2
+` + "```" + `
 <!-- GLM-SUBAGENT-END -->`
 
 // glmSectionStart is the start marker for the GLM section in CLAUDE.md.

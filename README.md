@@ -36,7 +36,7 @@ go build -o glm ./cmd/glm/
 ./glm _install
 ```
 
-`_install` does the following: creates `~/.config/GoLeM/`, prompts for your Z.AI API key (stored in `zai_api_key` with 0600 permissions), writes `glm.toml` with `permission_mode`, creates `~/.claude/subagents/`, injects delegation instructions into `~/.claude/CLAUDE.md` between `<!-- GLM-SUBAGENT-START -->` and `<!-- GLM-SUBAGENT-END -->` markers, and for source installs creates a symlink at `~/.local/bin/glm`.
+`_install` does the following: creates `~/.config/GoLeM/`, prompts for your Z.AI API key (stored in `zai_api_key` with 0600 permissions), writes `glm.toml` with `permission_mode`, creates `~/.claude/subagents/`, injects GLM delegation instructions into `~/.claude/CLAUDE.md` between `<!-- GLM-SUBAGENT-START -->` and `<!-- GLM-SUBAGENT-END -->` markers (command reference, rules, and multi-agent patterns so the host Claude Code session knows how to manage GLM agents), and for source installs creates a symlink at `~/.local/bin/glm`.
 
 If you already had a key in `~/.config/zai/env` (old format), it migrates automatically.
 
@@ -130,6 +130,8 @@ glm config set model glm-4
 | `haiku_model` | `GLM_HAIKU_MODEL` | (model) | Model for fast tasks |
 | `permission_mode` | `GLM_PERMISSION_MODE` | `bypassPermissions` | Default permission mode |
 | `api_rps` | `GLM_API_RPS` | `3` | Max parallel agents (API requests per second) |
+| `proxy_enabled` | — | `true` | Rate-limiting proxy (serializes API calls across agents) |
+| `proxy_idle_timeout` | — | `600` | Proxy auto-shutdown after N seconds idle |
 
 Debug logging (`GLM_DEBUG=1`) is read directly from the environment, not from the config file:
 
