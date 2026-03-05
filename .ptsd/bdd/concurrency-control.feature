@@ -2,7 +2,7 @@
 Feature: Concurrency Control
   Limit the number of simultaneously running subagents using file-based
   locking with automatic recovery. Respect Z.AI coding plan API rate limits
-  via configurable max_parallel.
+  via configurable api_rps.
 
   Background:
     Given the subagent directory is "~/.claude/subagents/"
@@ -52,7 +52,7 @@ Feature: Concurrency Control
   Scenario: Slot claimed immediately when under limit
     Given the scenario from seed "slot_scenario_within_limit.json"
     And the counter is 2
-    And max_parallel is 3
+    And api_rps is 3
     When wait_for_slot is called
     Then the slot is claimed immediately
     And the counter becomes 3
@@ -61,16 +61,16 @@ Feature: Concurrency Control
   Scenario: Slot blocks when at capacity
     Given the scenario from seed "slot_scenario_at_limit.json"
     And the counter is 3
-    And max_parallel is 3
+    And api_rps is 3
     When wait_for_slot is called
     Then the call blocks
     And the polling interval is 2 seconds
     And the counter remains 3 until a slot is freed
 
-  Scenario: Slot claimed immediately when max_parallel is zero (unlimited)
+  Scenario: Slot claimed immediately when api_rps is zero (unlimited)
     Given the scenario from seed "slot_scenario_unlimited.json"
     And the counter is 10
-    And max_parallel is 0
+    And api_rps is 0
     When wait_for_slot is called
     Then the slot is claimed immediately
     And the counter becomes 11
@@ -132,11 +132,11 @@ Feature: Concurrency Control
     Then all child processes receive the signal
     And no orphan claude processes remain
 
-  # --- AC8: max_parallel respects Z.AI rate limits ---
+  # --- AC8: api_rps respects Z.AI rate limits ---
 
-  Scenario: Default max_parallel matches Z.AI coding plan limits
+  Scenario: Default api_rps matches Z.AI coding plan limits
     When config is loaded with defaults
-    Then max_parallel is 3
+    Then api_rps is 3
     And this matches typical Z.AI coding plan concurrency limits
 
   # --- Edge Cases ---
