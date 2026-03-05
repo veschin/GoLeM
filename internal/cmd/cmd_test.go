@@ -405,9 +405,9 @@ func TestRunCommandPrintsStderrOnExecutionFailure(t *testing.T) {
 
 // ─── AC7: glm start — async execution ────────────────────────────────────────
 
-// Scenario: Start command writes PID before printing job ID
-// seed: start_output.json — "PID must be written to pid.txt BEFORE the job ID is printed to stdout."
-func TestStartCommandWritesPIDBeforePrintingJobID(t *testing.T) {
+// Scenario: Start command writes PID asynchronously inside goroutine
+// seed: start_output.json — "PID is written to pid.txt by the background goroutine after subprocess starts."
+func TestStartCommandWritesPIDAsyncInGoroutine(t *testing.T) {
 	root := t.TempDir()
 	projectID := "test-project"
 	f := &cmd.Flags{Dir: t.TempDir(), Timeout: 60, Prompt: "Analyze the code"}
@@ -422,26 +422,36 @@ func TestStartCommandWritesPIDBeforePrintingJobID(t *testing.T) {
 		t.Fatal("StartCmd: JobID should not be empty")
 	}
 
-	// PID must have been written before the job ID was printed.
-	if !result.PIDWritten {
-		t.Error("StartCmd: PIDWritten should be true — pid.txt must be written before job ID is printed")
-	}
-
-	// Verify pid.txt exists and contains a valid PID.
-	jobDir := filepath.Join(root, projectID, result.JobID)
-	pidData, readErr := os.ReadFile(filepath.Join(jobDir, "pid.txt"))
-	if readErr != nil {
-		t.Fatalf("pid.txt: %v", readErr)
-	}
-	pid, convErr := strconv.Atoi(strings.TrimSpace(string(pidData)))
-	if convErr != nil || pid <= 0 {
-		t.Errorf("pid.txt: expected positive integer PID, got %q", string(pidData))
+	// PIDWritten must be false at return time — PID is written async by the goroutine.
+	if result.PIDWritten {
+		t.Error("StartCmd: PIDWritten should be false — PID is now written asynchronously inside the goroutine")
 	}
 
 	// The job ID must be the only content on stdout (single line, no decoration).
 	printed := strings.TrimSuffix(stdoutBuf.String(), "\n")
 	if printed != result.JobID {
 		t.Errorf("stdout: got %q, want %q", printed, result.JobID)
+	}
+
+	// Wait for the background goroutine to write pid.txt.
+	jobDir := filepath.Join(root, projectID, result.JobID)
+	deadline := time.Now().Add(5 * time.Second)
+	var pidData []byte
+	var readErr error
+	for time.Now().Before(deadline) {
+		pidData, readErr = os.ReadFile(filepath.Join(jobDir, "pid.txt"))
+		if readErr == nil {
+			break
+		}
+		time.Sleep(50 * time.Millisecond)
+	}
+	if readErr != nil {
+		t.Fatalf("pid.txt was not written by goroutine within deadline: %v", readErr)
+	}
+
+	pid, convErr := strconv.Atoi(strings.TrimSpace(string(pidData)))
+	if convErr != nil || pid <= 0 {
+		t.Errorf("pid.txt: expected positive integer PID, got %q", string(pidData))
 	}
 
 	// Allow background goroutine to finish before TempDir cleanup.

@@ -805,6 +805,95 @@ func TestPerSlotEnvVarPrecedenceOverGLMModel(t *testing.T) {
 	}
 }
 
+// ---- Scenario: TOML with empty model value returns parse error ----
+
+func TestTOMLEmptyModelValueReturnsError(t *testing.T) {
+	configDir, subagentDir := setupDirs(t)
+	writeTOML(t, configDir, "model = \"\"\npermission_mode = \"acceptEdits\"\n")
+	writeAPIKey(t, configDir, seedHappyPathAPIKey)
+
+	_, err := Load(configDir, subagentDir)
+	if err == nil {
+		t.Fatal("Load should return an error for empty model value")
+	}
+	wantPrefix := `err:config "Failed to parse glm.toml:`
+	if !strings.HasPrefix(err.Error(), wantPrefix) {
+		t.Errorf("error should start with %q; got: %s", wantPrefix, err.Error())
+	}
+	if !strings.Contains(err.Error(), "model value is empty") {
+		t.Errorf("error should mention 'model value is empty'; got: %s", err.Error())
+	}
+}
+
+// ---- Scenario: TOML with empty single-quoted model value returns parse error ----
+
+func TestTOMLEmptyQuotedValueReturnsError(t *testing.T) {
+	configDir, subagentDir := setupDirs(t)
+	writeTOML(t, configDir, "model = ''\npermission_mode = \"acceptEdits\"\n")
+	writeAPIKey(t, configDir, seedHappyPathAPIKey)
+
+	_, err := Load(configDir, subagentDir)
+	if err == nil {
+		t.Fatal("Load should return an error for empty single-quoted model value")
+	}
+	wantPrefix := `err:config "Failed to parse glm.toml:`
+	if !strings.HasPrefix(err.Error(), wantPrefix) {
+		t.Errorf("error should start with %q; got: %s", wantPrefix, err.Error())
+	}
+	if !strings.Contains(err.Error(), "model value is empty") {
+		t.Errorf("error should mention 'model value is empty'; got: %s", err.Error())
+	}
+}
+
+// ---- Scenario: TOML with empty permission_mode returns parse error ----
+
+func TestTOMLEmptyPermissionModeReturnsError(t *testing.T) {
+	configDir, subagentDir := setupDirs(t)
+	writeTOML(t, configDir, "model = \"glm-5\"\npermission_mode = \"\"\n")
+	writeAPIKey(t, configDir, seedHappyPathAPIKey)
+
+	_, err := Load(configDir, subagentDir)
+	if err == nil {
+		t.Fatal("Load should return an error for empty permission_mode value")
+	}
+	wantPrefix := `err:config "Failed to parse glm.toml:`
+	if !strings.HasPrefix(err.Error(), wantPrefix) {
+		t.Errorf("error should start with %q; got: %s", wantPrefix, err.Error())
+	}
+	if !strings.Contains(err.Error(), "permission_mode value is empty") {
+		t.Errorf("error should mention 'permission_mode value is empty'; got: %s", err.Error())
+	}
+}
+
+// ---- Scenario: TOML with empty per-slot model values return parse error ----
+
+func TestTOMLEmptyPerSlotModelReturnsError(t *testing.T) {
+	cases := []struct {
+		name string
+		toml string
+		want string
+	}{
+		{"opus_model", "opus_model = \"\"\n", "opus_model value is empty"},
+		{"sonnet_model", "sonnet_model = ''\n", "sonnet_model value is empty"},
+		{"haiku_model", "haiku_model = \"\"\n", "haiku_model value is empty"},
+	}
+	for _, tc := range cases {
+		t.Run(tc.name, func(t *testing.T) {
+			configDir, subagentDir := setupDirs(t)
+			writeTOML(t, configDir, tc.toml)
+			writeAPIKey(t, configDir, seedHappyPathAPIKey)
+
+			_, err := Load(configDir, subagentDir)
+			if err == nil {
+				t.Fatalf("Load should return an error for empty %s", tc.name)
+			}
+			if !strings.Contains(err.Error(), tc.want) {
+				t.Errorf("error should contain %q; got: %s", tc.want, err.Error())
+			}
+		})
+	}
+}
+
 // ---- compile-time check: verify fmt and strconv imports are used ----
 var _ = fmt.Sprintf
 var _ = strconv.Itoa

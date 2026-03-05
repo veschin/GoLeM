@@ -5,6 +5,7 @@ import (
 	"path/filepath"
 	"strconv"
 	"strings"
+	"sync"
 	"testing"
 	"time"
 )
@@ -460,5 +461,50 @@ func TestIsStaleQueuedReturnsFalseWhenUnder5Minutes(t *testing.T) {
 	}
 	if stale {
 		t.Errorf("IsStaleQueued = true, want false (job is only 3 min old)")
+	}
+}
+
+// ---------------------------------------------------------------------------
+// Concurrency: Reconcile flock
+// ---------------------------------------------------------------------------
+
+// TestConcurrentReconcileProducesConsistentCounter verifies that when multiple
+// goroutines call Reconcile simultaneously, the flock serialises them and the
+// final slot counter is correct (not corrupted by interleaving).
+func TestConcurrentReconcileProducesConsistentCounter(t *testing.T) {
+	base := t.TempDir()
+	counterPath := filepath.Join(base, ".running_count")
+	writeSlotCounterFile(t, counterPath, 5)
+
+	// One alive job and two dead jobs.
+	makeJob(t, base, "job-20260227-080000-dead0001", "running", deadPID(), "", false)
+	makeJob(t, base, "job-20260227-080001-dead0002", "running", deadPID(), "", false)
+	makeJob(t, base, "job-20260227-080100-alive001", "running", selfPID(), "", false)
+
+	const goroutines = 10
+	now := time.Now()
+	errs := make([]error, goroutines)
+	var wg sync.WaitGroup
+	wg.Add(goroutines)
+	for i := 0; i < goroutines; i++ {
+		i := i
+		go func() {
+			defer wg.Done()
+			errs[i] = Reconcile(base, now)
+		}()
+	}
+	wg.Wait()
+
+	for i, err := range errs {
+		if err != nil {
+			t.Errorf("Reconcile goroutine %d returned error: %v", i, err)
+		}
+	}
+
+	// Regardless of how many concurrent calls ran, the counter must reflect
+	// the actual number of alive running jobs: 1.
+	got := readSlotCounter(counterPath)
+	if got != 1 {
+		t.Errorf("slot counter = %d after concurrent Reconcile, want 1", got)
 	}
 }

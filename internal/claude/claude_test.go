@@ -478,6 +478,62 @@ func TestExitCode137SIGKILLMapsToFailed(t *testing.T) {
 	}
 }
 
+// TestSignalExitCodeSIGKILL verifies that a process killed by SIGKILL (9)
+// produces exit code 137 (128+9) via the Unix convention.
+func TestSignalExitCodeSIGKILL(t *testing.T) {
+	// Create a fake claude script that sends SIGKILL to itself.
+	binDir := t.TempDir()
+	claudePath := filepath.Join(binDir, "claude")
+	script := "#!/bin/sh\nkill -9 $$\n"
+	if err := os.WriteFile(claudePath, []byte(script), 0o755); err != nil {
+		t.Fatal(err)
+	}
+	t.Setenv("PATH", binDir)
+
+	jobDir := t.TempDir()
+	workDir := t.TempDir()
+
+	cfg := claude.Config{
+		WorkDir:     workDir,
+		JobDir:      jobDir,
+		TimeoutSecs: 10,
+		Prompt:      "test sigkill",
+	}
+
+	exitCode, _ := claude.Execute(cfg)
+	if exitCode != 137 {
+		t.Errorf("exit code = %d, want 137 (128 + SIGKILL)", exitCode)
+	}
+}
+
+// TestSignalExitCodeSIGTERM verifies that a process killed by SIGTERM (15)
+// produces exit code 143 (128+15) via the Unix convention.
+func TestSignalExitCodeSIGTERM(t *testing.T) {
+	// Create a fake claude script that sends SIGTERM to itself.
+	binDir := t.TempDir()
+	claudePath := filepath.Join(binDir, "claude")
+	script := "#!/bin/sh\nkill -15 $$\n"
+	if err := os.WriteFile(claudePath, []byte(script), 0o755); err != nil {
+		t.Fatal(err)
+	}
+	t.Setenv("PATH", binDir)
+
+	jobDir := t.TempDir()
+	workDir := t.TempDir()
+
+	cfg := claude.Config{
+		WorkDir:     workDir,
+		JobDir:      jobDir,
+		TimeoutSecs: 10,
+		Prompt:      "test sigterm",
+	}
+
+	exitCode, _ := claude.Execute(cfg)
+	if exitCode != 143 {
+		t.Errorf("exit code = %d, want 143 (128 + SIGTERM)", exitCode)
+	}
+}
+
 // --------------------------------------------------------------------------
 // AC8: Metadata file writes
 // --------------------------------------------------------------------------
@@ -785,6 +841,62 @@ func TestTimeoutFiresDuringExecution(t *testing.T) {
 	finishedAt := readJobFile(t, jobDir, "finished_at.txt")
 	if _, err := time.Parse(time.RFC3339, finishedAt); err != nil {
 		t.Errorf("finished_at.txt %q is not RFC3339: %v", finishedAt, err)
+	}
+}
+
+// TestTimeoutKillsEntireProcessGroup verifies that on timeout the entire
+// process group (parent + children) is killed, not just the direct child.
+// We use a shell script that spawns a background child writing to a marker
+// file; after the timeout fires, the marker file must stop growing, proving
+// the child was reaped.
+func TestTimeoutKillsEntireProcessGroup(t *testing.T) {
+	binDir := t.TempDir()
+	markerDir := t.TempDir()
+	markerFile := filepath.Join(markerDir, "child_alive.txt")
+
+	// Shell script: spawns a background child that writes to markerFile in a
+	// loop, then the parent also loops. Both must be killed on timeout.
+	script := fmt.Sprintf(`#!/bin/sh
+# Child process: writes a timestamp every 0.1s
+(while true; do date +%%s%%N >> %s; sleep 0.1; done) &
+# Parent process: busy-loop
+while true; do :; done
+`, markerFile)
+	claudePath := filepath.Join(binDir, "claude")
+	if err := os.WriteFile(claudePath, []byte(script), 0o755); err != nil {
+		t.Fatal(err)
+	}
+	t.Setenv("PATH", binDir)
+
+	jobDir := t.TempDir()
+	workDir := t.TempDir()
+
+	cfg := claude.Config{
+		WorkDir:     workDir,
+		JobDir:      jobDir,
+		TimeoutSecs: 1,
+		Prompt:      "spawn children",
+	}
+
+	exitCode, _ := claude.Execute(cfg)
+	if exitCode != 124 {
+		t.Fatalf("exit code = %d, want 124 (timeout)", exitCode)
+	}
+
+	// Give a brief grace period for any surviving child to write more lines.
+	time.Sleep(500 * time.Millisecond)
+
+	// Read the marker file line count right after timeout.
+	data1, _ := os.ReadFile(markerFile)
+	count1 := len(strings.Split(strings.TrimSpace(string(data1)), "\n"))
+
+	// Wait again — if child survived it would have written more lines.
+	time.Sleep(500 * time.Millisecond)
+	data2, _ := os.ReadFile(markerFile)
+	count2 := len(strings.Split(strings.TrimSpace(string(data2)), "\n"))
+
+	if count2 > count1 {
+		t.Errorf("child process survived timeout: line count grew from %d to %d", count1, count2)
 	}
 }
 

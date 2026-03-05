@@ -656,6 +656,52 @@ func TestStaleMkdirLockHas60SecondStalenessDetection(t *testing.T) {
 	}
 }
 
+// TestConcurrentWriteCounterDoesNotCorrupt verifies that concurrent
+// writeCounter calls via ClaimSlot/ReleaseSlot under flock produce a valid
+// integer counter (never partial or corrupted content).
+func TestConcurrentWriteCounterDoesNotCorrupt(t *testing.T) {
+	sm, dir := newSMWithCounter(t, 1000, 0)
+
+	const goroutines = 20
+	var wg sync.WaitGroup
+	wg.Add(goroutines)
+
+	// Half claim, half release — the counter should end at goroutines/2.
+	for i := range goroutines {
+		go func(idx int) {
+			defer wg.Done()
+			if idx%2 == 0 {
+				if err := sm.ClaimSlot(); err != nil {
+					t.Errorf("ClaimSlot: %v", err)
+				}
+			} else {
+				// Claim first so release doesn't clamp below zero.
+				if err := sm.ClaimSlot(); err != nil {
+					t.Errorf("ClaimSlot (for release): %v", err)
+				}
+				if err := sm.ReleaseSlot(); err != nil {
+					t.Errorf("ReleaseSlot: %v", err)
+				}
+			}
+		}(i)
+	}
+	wg.Wait()
+
+	// Verify counter file is a valid integer (not corrupted).
+	raw := readCounterFileRaw(t, dir)
+	val, err := strconv.Atoi(raw)
+	if err != nil {
+		t.Fatalf("counter file corrupted: content=%q err=%v", raw, err)
+	}
+
+	// All goroutines claimed once; even-numbered goroutines kept theirs,
+	// odd-numbered ones claimed then released. Net: goroutines/2 claims.
+	want := goroutines / 2
+	if val != want {
+		t.Errorf("counter after concurrent writes = %d, want %d", val, want)
+	}
+}
+
 // TestPIDReuseAcceptedAsFalsePositiveDuringReconciliation verifies that a
 // running job whose PID now belongs to an unrelated live process is treated as
 // alive (false positive accepted at startup).

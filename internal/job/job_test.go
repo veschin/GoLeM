@@ -7,6 +7,7 @@ import (
 	"path/filepath"
 	"regexp"
 	"strings"
+	"sync"
 	"testing"
 	"time"
 )
@@ -69,6 +70,96 @@ func assertFileNotExists(t *testing.T, path string) {
 	t.Helper()
 	if _, err := os.Stat(path); err == nil {
 		t.Errorf("expected file %s to NOT exist, but it does", filepath.Base(path))
+	}
+}
+
+// ---------------------------------------------------------------------------
+// Job ID validation (path traversal prevention)
+// ---------------------------------------------------------------------------
+
+// TestValidateJobIDAcceptsValidIDs covers valid job IDs with lowercase
+// alphanumeric, hyphens, and underscores.
+func TestValidateJobIDAcceptsValidIDs(t *testing.T) {
+	validIDs := []string{
+		"job-20260227-143205-a8f3b1c2",
+		"job_test",
+		"abc123",
+		"a",
+		"my-job-id",
+		"job_with_underscores",
+	}
+	for _, id := range validIDs {
+		if err := ValidateJobID(id); err != nil {
+			t.Errorf("ValidateJobID(%q) returned error: %v", id, err)
+		}
+	}
+}
+
+// TestValidateJobIDRejectsPathTraversal ensures IDs with ".." are rejected.
+func TestValidateJobIDRejectsPathTraversal(t *testing.T) {
+	err := ValidateJobID("../../etc")
+	if err == nil {
+		t.Fatal("expected error for path traversal ID, got nil")
+	}
+	if !strings.Contains(err.Error(), "err:validation") {
+		t.Errorf("expected err:validation prefix, got %v", err)
+	}
+}
+
+// TestValidateJobIDRejectsDots ensures IDs containing dots are rejected.
+func TestValidateJobIDRejectsDots(t *testing.T) {
+	err := ValidateJobID("job..foo")
+	if err == nil {
+		t.Fatal("expected error for dotted ID, got nil")
+	}
+	if !strings.Contains(err.Error(), "err:validation") {
+		t.Errorf("expected err:validation prefix, got %v", err)
+	}
+}
+
+// TestValidateJobIDRejectsSlash ensures IDs containing slashes are rejected.
+func TestValidateJobIDRejectsSlash(t *testing.T) {
+	err := ValidateJobID("job/foo")
+	if err == nil {
+		t.Fatal("expected error for slash ID, got nil")
+	}
+	if !strings.Contains(err.Error(), "err:validation") {
+		t.Errorf("expected err:validation prefix, got %v", err)
+	}
+}
+
+// TestValidateJobIDRejectsEmpty ensures empty IDs are rejected.
+func TestValidateJobIDRejectsEmpty(t *testing.T) {
+	err := ValidateJobID("")
+	if err == nil {
+		t.Fatal("expected error for empty ID, got nil")
+	}
+	if !strings.Contains(err.Error(), "err:validation") {
+		t.Errorf("expected err:validation prefix, got %v", err)
+	}
+}
+
+// TestNewJobRejectsUnsafeJobID ensures NewJob returns an error for unsafe IDs.
+func TestNewJobRejectsUnsafeJobID(t *testing.T) {
+	root := t.TempDir()
+	_, err := NewJob(root, "project-123", "../escape")
+	if err == nil {
+		t.Fatal("expected error for unsafe job ID in NewJob, got nil")
+	}
+	if !strings.Contains(err.Error(), "err:validation") {
+		t.Errorf("expected err:validation prefix, got %v", err)
+	}
+}
+
+// TestFindJobDirRejectsUnsafeJobID ensures FindJobDir returns an error for unsafe IDs.
+func TestFindJobDirRejectsUnsafeJobID(t *testing.T) {
+	root := t.TempDir()
+	_, err := FindJobDir(root, "project-123", "../escape")
+	if err == nil {
+		t.Fatal("expected error for unsafe job ID in FindJobDir, got nil")
+	}
+	if !strings.Contains(err.Error(), "err:validation") {
+		t.Errorf("expected err:validation prefix, got %v", err)
 	}
 }
 
@@ -600,4 +691,48 @@ func TestNewJobsAlwaysUseProjectScopedDirectories(t *testing.T) {
 	if _, err := os.Stat(flatDir); err == nil {
 		t.Errorf("job was created at flat path %s — must be project-scoped", flatDir)
 	}
+}
+
+// ---------------------------------------------------------------------------
+// Concurrency: StatusTransition flock
+// ---------------------------------------------------------------------------
+
+// TestConcurrentStatusTransitionOnlyOneWins verifies that when multiple
+// goroutines race to transition a job from queued->running, exactly one
+// succeeds and the rest get an "invalid transition" error (because the job
+// is already in "running" state by the time they acquire the lock).
+func TestConcurrentStatusTransitionOnlyOneWins(t *testing.T) {
+	dir := copySeedDir(t, "job_queued")
+	const goroutines = 10
+	var (
+		wg       sync.WaitGroup
+		mu       sync.Mutex
+		successes int
+		failures  int
+	)
+
+	wg.Add(goroutines)
+	for i := 0; i < goroutines; i++ {
+		go func() {
+			defer wg.Done()
+			j := &Job{ID: "job_queued", Dir: dir}
+			err := j.StatusTransition(StatusRunning)
+			mu.Lock()
+			defer mu.Unlock()
+			if err == nil {
+				successes++
+			} else {
+				failures++
+			}
+		}()
+	}
+	wg.Wait()
+
+	if successes != 1 {
+		t.Errorf("expected exactly 1 successful transition, got %d (failures: %d)", successes, failures)
+	}
+	if failures != goroutines-1 {
+		t.Errorf("expected %d failures, got %d", goroutines-1, failures)
+	}
+	assertFileContains(t, filepath.Join(dir, "status"), "running")
 }
